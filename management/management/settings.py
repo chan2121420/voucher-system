@@ -12,7 +12,7 @@ SECRET_KEY = 'django-insecure-ynmfo=w+y!--94m7^e3_v4q(1xe859gd*+g*yhc2j2)23_a8f9
 
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['https://voucher-system-production.up.railway.app/']
 
 CSRF_TRUSTED_ORIGINS = ['https://voucher-system-production.up.railway.app/']
 
