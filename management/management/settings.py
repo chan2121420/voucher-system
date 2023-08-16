@@ -10,7 +10,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-ynmfo=w+y!--94m7^e3_v4q(1xe859gd*+g*yhc2j2)23_a8f9'
 
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['https://voucher-system-production.up.railway.app/']
 
@@ -112,8 +112,8 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 
-MEDIA_URL = 'staticfiles/media/'
-STATIC_URL = 'staticfiles/'
+MEDIA_URL = 'media/'
+STATIC_URL = 'static/'
 
 STATICFILES_DIRS = [BASE_DIR / "static"]
 MEDIA_ROOT = os.path.join(BASE_DIR / 'staticfiles/media/')
