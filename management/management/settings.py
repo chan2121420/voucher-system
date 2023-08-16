@@ -12,7 +12,7 @@ SECRET_KEY = 'django-insecure-ynmfo=w+y!--94m7^e3_v4q(1xe859gd*+g*yhc2j2)23_a8f9
 
 DEBUG = False
 
-ALLOWED_HOSTS = ['https://voucher-system-production.up.railway.app/']
+ALLOWED_HOSTS = ['*']
 
 CSRF_TRUSTED_ORIGINS = ['https://voucher-system-production.up.railway.app/']
 
@@ -112,7 +112,7 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 
-MEDIA_URL = 'media/'
+MEDIA_URL = 'static/media/'
 STATIC_URL = 'static/'
 
 STATICFILES_DIRS = [BASE_DIR / "static"]
