@@ -40,7 +40,6 @@ six==1.16.0
 social-auth-app-django==5.2.0
 social-auth-core==4.4.2
 sqlparse==0.4.4
-toastify==1.1.5
 tornado==6.3.2
 tzdata==2023.3
 urllib3==1.26.16
