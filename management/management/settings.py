@@ -14,6 +14,9 @@ DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
+if not DEBUG:
+    CSRF_TRUSTED_ORIGINS = ['https://voucher-system-production.up.railway.app']
+
 
 INSTALLED_APPS = [
     'django.contrib.admin',
