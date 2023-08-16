@@ -65,7 +65,7 @@ def populateVouchers(request, pk):
         return render(request, '404.html')
 
     if file.status == 'not populated':
-        with open('static/media/'+ str(file.file), "r") as f:
+        with open('staticfiles/media/'+ str(file.file), "r") as f:
             for voucher_number in f:
                 voucher = vouchers(
                     user_id = request.user.id,
