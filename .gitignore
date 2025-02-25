@@ -20,3 +20,5 @@ application.log
 dev/*.pycgit 
 *base.py
 *.pyc
+.env
+

@@ -9,7 +9,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY', '')
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-ynmfo=w+y!--94m7^e3_v4q(1xe859gd*+g*yhc2j2)23_a8f9')
 
 DEBUG = False
 
@@ -134,15 +134,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # crispy forms
 CRISPY_ALLOWED_TEMPLATE_PACKS = 'boostsrap5'
 CRISPY_TEMPLATE_PACK = 'bootstrap5'
-
-# email backend
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'mail.linkspot.co.zw'
-EMAIL_HOST_USER = 'info@linkspot.co.zw'
-EMAIL_HOST_PASSWORD = 'info@23'
-EMAIL_PORT = 465
-EMAIL_USE_TLS = False
-EMAIL_USE_SSL = True
 
 # messages
 MESSAGE_TAGS = {
