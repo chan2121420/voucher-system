@@ -1,1 +1,1 @@
-web: gunicorn 'management.wsgi'
+web: gunicorn management.wsgi:application
