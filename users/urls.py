@@ -17,8 +17,8 @@ urlpatterns = [
     path('userDelete/<int:pk>/', views.userDelete, name='userDelete'),
     path('userDetail/<int:pk>/', views.userDetail, name='userDetail'),
 
-    path('register/', RegisterView.as_view(), name='register'),
-    path('login/', LoginView.as_view(), name='login'),
-    path('logout/', LogoutView.as_view(), name='logout'),
+    path('register/', RegisterView.as_view(), name='api_register'),
+    path('login/', LoginView.as_view(), name='api_login'),
+    path('logout/', LogoutView.as_view(), name='api_logout'),
     path('', include(router.urls)),
 ]
