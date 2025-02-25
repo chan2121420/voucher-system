@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required
 
 @login_required(login_url='/users/login/')
 def dashboard(request): 
-    vouchers = voucherUser.objects.filter(date_created = date.today())
+    vouchers = VoucherUser.objects.filter(date_created = date.today())
     return render(request, 'dashboard.html', {
         'vouchers':vouchers,
         'count':vouchers.count(),

@@ -6,10 +6,10 @@ from rest_framework.routers import DefaultRouter
 app_name = 'vouchers'
 
 router = DefaultRouter()
-router.register(r'files', api.VoucherFileViewSet)
-router.register(r'logs', api.VoucherLogViewSet)
-router.register(r'categories', api.VoucherCategoryViewSet)
-router.register(r'users', api.VoucherUserViewSet)
+router.register(r'api/v1/files', api.VoucherFileViewSet)
+router.register(r'api/v1/logs', api.VoucherLogViewSet)
+router.register(r'api/v1/categories', api.VoucherCategoryViewSet)
+router.register(r'api/v1/users', api.VoucherUserViewSet)
 
 urlpatterns = [
     path('voucherLogs/', views.voucherLog, name='voucherLogs'),
@@ -21,5 +21,5 @@ urlpatterns = [
     path("populateVouchers/<int:pk>", views.populateVouchers,  name="populateVouchers"),
 
     #api urls
-    path('api/v1/', include(router.urls)),
+    path('', include(router.urls)),
 ]

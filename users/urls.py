@@ -4,7 +4,7 @@ from . api import *
 from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
-router.register(r'users', UserViewSet, basename='user')
+router.register(r'api/v1/users', UserViewSet, basename='user')
 
 app_name = 'users'
 
@@ -17,8 +17,8 @@ urlpatterns = [
     path('userDelete/<int:pk>/', views.userDelete, name='userDelete'),
     path('userDetail/<int:pk>/', views.userDetail, name='userDetail'),
 
-    path('register/', RegisterView.as_view(), name='api_register'),
-    path('login/', LoginView.as_view(), name='api_login'),
-    path('logout/', LogoutView.as_view(), name='api_logout'),
+    path('api/v1/register/', RegisterView.as_view(), name='api_register'),
+    path('api/v1/login/', LoginView.as_view(), name='api_login'),
+    path('api/v1/logout/', LogoutView.as_view(), name='api_logout'),
     path('', include(router.urls)),
 ]

@@ -9,4 +9,5 @@ urlpatterns = [
     path('', views.dashboard, name='dashboard'),
     path('users/', include('users.urls', namespace='users')),
     path('vouchers/', include('vouchers.urls', namespace='vouchers')),
+    path('finance/', include('finance.urls', namespace='finance')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
