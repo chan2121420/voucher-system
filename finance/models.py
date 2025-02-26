@@ -11,6 +11,7 @@ class Sale(models.Model):
     ])
     date = models.DateTimeField(auto_now_add=True)
     cashier = models.ForeignKey("users.User", on_delete=models.CASCADE)
+    client = models.ForeignKey("finance.Client", on_delete=models.CASCADE, null=True)
 
 
     class Meta:
@@ -28,4 +29,14 @@ class SaleReturn(models.Model):
 
     def __str__(self):
         return f'{self.sale} - {self.amount}'
+    
+
+class Client(models.Model):
+    name = models.CharField(max_length=50)
+    phonenumber = models.CharField(max_length=50) 
+    email = models.EmailField(max_length=50)   
+    date = models.DateField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
 

@@ -1,5 +1,6 @@
 from . import views
 from . import api
+from . api import VoucherListAPIView
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
@@ -21,5 +22,6 @@ urlpatterns = [
     path("populateVouchers/<int:pk>", views.populateVouchers,  name="populateVouchers"),
 
     #api urls
+    path("api/v1/vouchers/", VoucherListAPIView.as_view(), name="voucher-list"),
     path('', include(router.urls)),
 ]

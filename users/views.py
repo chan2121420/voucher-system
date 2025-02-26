@@ -69,3 +69,15 @@ def userDelete(request, pk):
 def userLogout(request):
     logout(request)
     return redirect('users:login')
+from rest_framework import status, generics, permissions, viewsets
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from . serializers import *
+
+class UserViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint for managing users.
+    """
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    # permission_classes = [permissions.IsAuthenticated]

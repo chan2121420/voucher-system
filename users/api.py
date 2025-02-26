@@ -10,7 +10,7 @@ from .serializers import (
     LogoutSerializer,
     UserSerializer,
 )
-
+from loguru import logger
 
 class RegisterView(generics.CreateAPIView):
     """
@@ -23,19 +23,22 @@ class RegisterView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response({"message": "User registered successfully"}, status=status.HTTP_201_CREATED)
+        return Response({"message": "User registered successfully"}, status.HTTP_201_CREATED)
 
 
 class LoginView(APIView):
     """
     API endpoint for user login.
     """
-    permission_classes = [permissions.AllowAny]
+    serializer_class = LoginSerializer
 
     def post(self, request, *args, **kwargs):
-        serializer = LoginSerializer(data=request.data)
+        print(f"Login attempt by {request.data.get('username')}")
+        serializer = self.serializer_class(data=request.data)
+        logger.info(serializer)
         serializer.is_valid(raise_exception=True)
-        return Response(serializer.validated_data, status=status.HTTP_200_OK)
+        print(serializer.validated_data)
+        return Response(serializer.data)
 
 
 class LogoutView(APIView):
@@ -48,7 +51,7 @@ class LogoutView(APIView):
         serializer = LogoutSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response({"message": "Successfully logged out"}, status=status.HTTP_204_NO_CONTENT)
+        return Response({"message": "Successfully logged out"}, status.HTTP_204_NO_CONTENT)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -57,5 +60,5 @@ class UserViewSet(viewsets.ModelViewSet):
     """
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    # permission_classes = [permissions.IsAuthenticated]
 

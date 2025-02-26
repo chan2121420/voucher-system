@@ -36,35 +36,38 @@ class LoginSerializer(serializers.ModelSerializer):
     username = serializers.CharField(max_length=255, min_length=3)
     tokens = serializers.SerializerMethodField()
 
+    class Meta:
+        model = User
+        fields = ['password', 'username', 'tokens']
+
+
     def get_tokens(self, obj):
         user = User.objects.get(username=obj['username'])
+        print(user)
         return {
             'refresh': user.tokens()['refresh'],
             'access': user.tokens()['access']
         }
 
-    class Meta:
-        model = User
-        fields = ['password', 'username', 'tokens']
-
-    def validate(self, attrs):
-        username = attrs.get('username', '')
-        password = attrs.get('password', '')
-        user = auth.authenticate(username=username, password=password)
-
-        if not user:
-            raise AuthenticationFailed('Invalid credentials, try again')
-        if not user.is_active:
-            raise AuthenticationFailed('Account disabled, contact admin')
-        
-        return {
-            'email': user.email,
-            'username': user.username,
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'role': user.role,
-            'tokens': user.tokens
-        }
+    # def get_tokens(self, obj):
+    #     try:
+    #         if isinstance(obj, dict):
+    #             # If obj is a dictionary from validate
+    #             username = obj.get('username')
+    #             user = User.objects.get(username=username)
+    #             return {
+    #                 'refresh': user.tokens()['refresh'],
+    #                 'access': user.tokens()['access']
+    #             }
+    #         else:
+    #             # If obj is already a User instance
+    #             return {
+    #                 'refresh': obj.tokens()['refresh'],
+    #                 'access': obj.tokens()['access']
+    #             }
+    #     except Exception as e:
+    #         print(f"Error in get_tokens: {str(e)}")
+    #         return {}
 
 
 class LogoutSerializer(serializers.Serializer):

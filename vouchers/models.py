@@ -84,3 +84,6 @@ class VoucherUser(models.Model):
 
     def get_absolute_url(self):
         return reverse("VoucherUser_detail", kwargs={"pk": self.pk})
+
+
+
