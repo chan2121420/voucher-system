@@ -25,3 +25,4 @@ urlpatterns = [
     path("api/v1/vouchers/", VoucherListAPIView.as_view(), name="voucher-list"),
     path('', include(router.urls)),
 ]
+ 

@@ -12,7 +12,7 @@ class SaleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Sale
-        fields = ['id', 'voucher', 'amount', 'type', 'date', 'cashier', 'client']
+        fields = ['id', 'voucher', 'amount', 'sale_type', 'date', 'cashier', 'client']
         read_only_fields = ['id', 'date']
 
 
@@ -24,10 +24,3 @@ class SaleReturnSerializer(serializers.ModelSerializer):
         fields = ['id', 'sale', 'amount', 'date', 'cashier']
         read_only_fields = ['id', 'date']
 
-class SaleSerializer(serializers.ModelSerializer):
-    client = ClientSerializer()  
-
-    class Meta:
-        model = Sale
-        fields = ['id', 'voucher', 'amount', 'type', 'date', 'cashier']
-        read_only_fields = ["id", "date"]

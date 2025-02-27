@@ -3,7 +3,7 @@ from django.db import models
 class Sale(models.Model):
     voucher = models.ManyToManyField("vouchers.Vouchers")
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    type = models.CharField(max_length=50, choices=[
+    sale_type = models.CharField(max_length=50, choices=[
         ('hourly', 'hourly'), 
         ('day desk', 'day desk'),
         ('meeting room', 'meeting room'),
@@ -12,7 +12,6 @@ class Sale(models.Model):
     date = models.DateTimeField(auto_now_add=True)
     cashier = models.ForeignKey("users.User", on_delete=models.CASCADE)
     client = models.ForeignKey("finance.Client", on_delete=models.CASCADE, null=True)
-
 
     class Meta:
         ordering = ['-date']

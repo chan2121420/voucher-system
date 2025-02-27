@@ -7,7 +7,9 @@
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/boxicons@latest/css/boxicons.min.css">
     <link rel="stylesheet" type="text/css" href="{% static 'assets/plugins/toastr//toastr.min.css' %}" media="all">
-    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     {% comment %} css {% endcomment %}
     <link rel="stylesheet" href="{% static 'bootstrap/css/bootstrap.min.css' %}">
     <link rel="stylesheet" href="{% static 'sass/main.css' %}">
@@ -16,36 +18,198 @@
     <title>{% block title %}Voucher System{% endblock title %}</title>
 </head>
 <body id="body-pd">
-    <header class="header bg-light border d-flex align-items-center" id="header">
-        <div class="header_toggle"> 
-            <h5>Voucher Management</h5>
+    <header class="header sticky-top bg-white shadow-sm d-flex align-items-center justify-content-between px-4" id="header" style="height: 70px;">
+        <div class="d-flex align-items-center"> 
+            <a href="{% url 'dashboard' %}" class="text-decoration-none">
+                <div class="d-flex align-items-center">
+                    <div class="me-2">
+                        <i class="bx bxs-cube-alt text-primary" style="font-size: 28px;"></i>
+                    </div>
+                    <h4 class="mb-0 fw-bold text-primary">Linspot</h4>
+                </div>
+            </a>
         </div>
+        
         <div class="d-flex align-items-center">
-            <small class="px-2 text-dark">
-                {{request.user.username}} 
-            </small>
-            <span class="header_img px-2"><img src="{{request.user.image.url}}" alt=""></span>
-            <span class="fs-3">
-                <a href="{% url 'users:logout' %}">
-                    <i class='bx bx-log-out' style="color: #333;"></i>
+            <!-- Notifications -->
+            <div class="dropdown mx-2">
+                <a href="#" class="position-relative text-dark" id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bx bx-bell fs-4"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">
+                        3+
+                    </span>
                 </a>
-            </span>
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="notificationDropdown" style="width: 320px;">
+                    <li>
+                        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+                            <h6 class="mb-0 fw-bold">Notifications</h6>
+                            <a href="#" class="text-primary text-decoration-none small">Mark all as read</a>
+                        </div>
+                    </li>
+                    <li><a class="dropdown-item py-2" href="#">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0 bg-primary bg-opacity-10 rounded-circle p-2 me-3">
+                                <i class="bx bx-user text-primary"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0 fw-semibold">New voucher created</p>
+                                <p class="mb-0 text-muted small">5 minutes ago</p>
+                            </div>
+                        </div>
+                    </a></li>
+                    <li><a class="dropdown-item py-2" href="#">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0 bg-success bg-opacity-10 rounded-circle p-2 me-3">
+                                <i class="bx bx-check text-success"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0 fw-semibold">Sales report generated</p>
+                                <p class="mb-0 text-muted small">2 hours ago</p>
+                            </div>
+                        </div>
+                    </a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-center text-primary" href="#">View all notifications</a></li>
+                </ul>
+            </div>
+            
+            <!-- Alerts -->
+            <div class="dropdown mx-2">
+                <a href="#" class="position-relative text-dark" id="alertsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bx bx-bell-plus fs-4"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark" style="font-size: 0.6rem;">
+                        2
+                    </span>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="alertsDropdown" style="width: 320px;">
+                    <li>
+                        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+                            <h6 class="mb-0 fw-bold">Alerts</h6>
+                            <a href="#" class="text-primary text-decoration-none small">Clear all</a>
+                        </div>
+                    </li>
+                    <li><a class="dropdown-item py-2" href="#">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0 bg-warning bg-opacity-10 rounded-circle p-2 me-3">
+                                <i class="bx bx-error text-warning"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0 fw-semibold">Low voucher inventory</p>
+                                <p class="mb-0 text-muted small">Please restock soon</p>
+                            </div>
+                        </div>
+                    </a></li>
+                    <li><a class="dropdown-item py-2" href="#">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0 bg-danger bg-opacity-10 rounded-circle p-2 me-3">
+                                <i class="bx bx-x text-danger"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0 fw-semibold">System maintenance</p>
+                                <p class="mb-0 text-muted small">Scheduled for 11:00 PM</p>
+                            </div>
+                        </div>
+                    </a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-center text-primary" href="#">View all alerts</a></li>
+                </ul>
+            </div>
+            
+            <!-- Messages -->
+            <div class="dropdown mx-2">
+                <a href="#" class="position-relative text-dark" id="messagesDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bx bx-message-square-detail fs-4"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size: 0.6rem;">
+                        4
+                    </span>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="messagesDropdown" style="width: 320px;">
+                    <li>
+                        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+                            <h6 class="mb-0 fw-bold">Messages</h6>
+                            <a href="#" class="text-primary text-decoration-none small">View all</a>
+                        </div>
+                    </li>
+                    <li><a class="dropdown-item py-2" href="#">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0 me-3">
+                                <div class="avatar avatar-sm">
+                                    <img src="{% static 'img/profile-placeholder.jpg' %}" alt="User" class="rounded-circle" width="40">
+                                </div>
+                            </div>
+                            <div>
+                                <p class="mb-0 fw-semibold">Jane Smith</p>
+                                <p class="mb-0 text-muted small text-truncate" style="max-width: 200px;">When will my voucher be ready?</p>
+                            </div>
+                        </div>
+                    </a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-center text-primary" href="#">View all messages</a></li>
+                </ul>
+            </div>
+            
+            <!-- User profile -->
+            <div class="dropdown ms-2">
+                <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <div class="me-2 d-none d-sm-block">
+                        <p class="mb-0 fw-semibold text-dark">{{request.user.username}}</p>
+                        <p class="mb-0 text-muted small">Administrator</p>
+                    </div>
+                    <div class="header_img rounded-circle overflow-hidden shadow-sm" style="width: 40px; height: 40px;">
+                        <img src="{{request.user.image.url}}" alt="User" class="img-fluid">
+                    </div>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="userDropdown">
+                    <li><a class="dropdown-item py-2" href="#">
+                        <i class="bx bx-user me-2 text-muted"></i> My Profile
+                    </a></li>
+                    <li><a class="dropdown-item py-2" href="#">
+                        <i class="bx bx-cog me-2 text-muted"></i> Settings
+                    </a></li>
+                    <li><a class="dropdown-item py-2" href="#">
+                        <i class="bx bx-help-circle me-2 text-muted"></i> Help Center
+                    </a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item py-2 text-danger" href="{% url 'users:logout' %}">
+                        <i class="bx bx-log-out me-2"></i> Sign Out
+                    </a></li>
+                </ul>
+            </div>
         </div>
     </header>      
-      
+    
     <div class="py-3">
-        <div class="container py-3 ">
-            <nav aria-label="breadcrumb" style="--bs-breadcrumb-divider: '>';" class="px-3">
-                <ol class="breadcrumb" class="py-5">
-                  <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
-                  <li class="breadcrumb-item"><a href="{% url 'vouchers:voucherList' %}">Vouchers List</a></li>
-                  <li class="breadcrumb-item"><a href="{% url 'vouchers:voucherLogs' %}">Voucher Logs</a></li>
-                  <li class="breadcrumb-item"><a href="{% url 'vouchers:voucherFiles' %}">Voucher Files</a></li>
-                  <li class="breadcrumb-item"><a href="{% url 'users:users' %}">Users</a></li>
-                </ol>
-              </nav>
-          </div>
-        {% block content %}{% endblock content %}
+        <div class="container-fluid py-3">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <nav aria-label="breadcrumb" class="px-0">
+                        <ol class="breadcrumb mb-0 py-2">
+                            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}" class="text-decoration-none"><i class="bx bx-home me-1"></i>Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'vouchers:voucherList' %}" class="text-decoration-none">Vouchers List</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'vouchers:voucherLogs' %}" class="text-decoration-none">Voucher Logs</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'vouchers:voucherFiles' %}" class="text-decoration-none">Voucher Files</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'users:users' %}" class="text-decoration-none">Users</a></li>
+                        </ol>
+                    </nav>
+                </div>
+
+                <div class="d-flex align-items-center">
+                    <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle d-flex align-items-center" type="button" id="quickActionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bx bx-plus me-2"></i> Quick Actions
+                        </button>
+                        <ul class="dropdown-menu shadow border-0" aria-labelledby="quickActionsDropdown">
+                            <li><a class="dropdown-item" href="#"><i class="bx bx-plus-circle me-2"></i> Create Voucher</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="bx bx-file me-2"></i> New Sale</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="bx bx-user-plus me-2"></i> Add Client</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#"><i class="bx bx-cog me-2"></i>Settings</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            {% block content %}{% endblock content %}
+        </div>
     </div>
     <script src="{% static 'js/jquery.js' %}"></script>
     <script src="{% static 'assets/plugins/select2/dist/js/select2.min.js' %}"></script>

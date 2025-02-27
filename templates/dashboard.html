@@ -2,37 +2,451 @@
 {% load static %}
 {% block title %}Dashboard{% endblock title %}
 {% block content %}
-    <div class="dashboard">
-        <div class="row">
-            <div class="col-12">
-                <div class="container">
-                    <div class="row mt-5">
-                        <div class="col">
-                            <div class="card bg-dark text-light shadow" style="border: none !important;">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <h5 class="py-2">Vouchers</h5>
-                                    </div>
-                                    <h6 class="d-flex justify-content-between">Today's <span class="">{{count}}</span></h6>
-                                    <div class="voucher-table">
-                                        <table class="table-hover shadow w-100">
-                                            <tbody>
-                                                {% for voucher in vouchers %}
-                                                    <tr>
-                                                        <td class="text-light" style='color:#777 !important'><small>{{voucher.name}}</small></td>
-                                                        <td><small><a href=''style='color:#777 !important'>{{voucher.voucher_no}}</a></small></td>
-                                                        <td></td>
-                                                    </tr>
-                                                {% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
+<div>    
+    <style>
+        :root {
+            --primary: #4e73df;
+            --secondary: #6c757d;
+            --success: #1cc88a;
+            --info: #36b9cc;
+            --warning: #f6c23e;
+            --danger: #e74a3b;
+            --light: #f8f9fc;
+            --dark: #2c3e50;
+            --card-border-radius: 0.5rem;
+            --transition-speed: 0.3s;
+        }
+        
+        dash {
+            background-color: #f8f9fc;
+            font-family: 'Nunito', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        
+        .dashboard-card {
+            border-radius: var(--card-border-radius);
+            border: none;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            transition: transform var(--transition-speed);
+            margin-bottom: 1.5rem;
+        }
+        
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card-indicator {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 6px;
+            border-radius: var(--card-border-radius) 0 0 var(--card-border-radius);
+        }
+        
+        .indicator-primary { background-color: var(--primary); }
+        .indicator-success { background-color: var(--success); }
+        .indicator-info { background-color: var(--info); }
+        .indicator-warning { background-color: var(--warning); }
+        
+        .card-value {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+        
+        .value-indicator {
+            font-size: 0.875rem;
+            margin-left: 0.25rem;
+        }
+        
+        .value-indicator.positive { color: var(--success); }
+        .value-indicator.negative { color: var(--danger); }
+        
+        .filter-container {
+            background-color: white;
+            border-radius: var(--card-border-radius);
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .voucher-card {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .voucher-item {
+            background-color: rgba(78, 115, 223, 0.1);
+            margin-bottom: 0.5rem;
+            border-radius: 0.25rem;
+            transition: all var(--transition-speed);
+        }
+        
+        .voucher-item:hover {
+            background-color: rgba(78, 115, 223, 0.2);
+        }
+        
+        .navbar-brand {
+            font-weight: 800;
+            font-size: 1.5rem;
+        }
+        
+        .custom-date-range {
+            display: none;
+        }
+        
+        .sales-type-chart-container, .revenue-trend-container, .expenses-chart-container {
+            position: relative;
+            height: 300px;
+        }
+        
+        .bg-gradient-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, #224abe 100%);
+            color: white;
+        }
+        
+        .bg-gradient-success {
+            background: linear-gradient(135deg, var(--success) 0%, #13855c 100%);
+            color: white;
+        }
+        
+        .bg-gradient-info {
+            background: linear-gradient(135deg, var(--info) 0%, #2c9fad 100%);
+            color: white;
+        }
+        
+        .bg-gradient-warning {
+            background: linear-gradient(135deg, var(--warning) 0%, #f4b30d 100%);
+            color: white;
+        }
+        
+        .modern-navbar {
+            background-color: white;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        }
+        
+        .custom-tab {
+            position: relative;
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            transition: all var(--transition-speed);
+        }
+        
+        .custom-tab.active {
+            color: var(--primary);
+            font-weight: 600;
+        }
+        
+        .custom-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: var(--primary);
+            border-radius: 3px 3px 0 0;
+        }
+        
+        .date-badge {
+            background-color: var(--light);
+            border-radius: 50rem;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+    </style>
+
+    <div class="container-fluid py-4">
+        <div class="filter-container mb-4">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h4 class="mb-0">Dashboard</h4>
+                    <p class="text-muted mb-0">
+                        <span id="dateRangeText">Today</span>
+                        <span class="date-badge" id="currentDateBadge"></span>
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex justify-content-md-end">
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-sm btn-primary filter-btn active" data-filter="day">Day</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary filter-btn px-2" data-filter="week">Week</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary filter-btn" data-filter="month">Month</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary filter-btn px-2" data-filter="year">Year</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary filter-btn" data-filter="custom">Custom</button>
+                        </div>
+                    </div>
+                    <div class="custom-date-range mt-2 justify-content-md-end">
+                        <div class="row g-2">
+                            <div class="col-auto">
+                                <input type="date" class="form-control form-control-sm" id="startDate">
+                            </div>
+                            <div class="col-auto">
+                                <input type="date" class="form-control form-control-sm" id="endDate">
+                            </div>
+                            <div class="col-auto">
+                                <button class="btn btn-sm btn-primary" id="applyCustomDate">Apply</button>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+        
+        <!-- Summary Cards -->
+        <div class="row">
+            <!-- Total Revenue Card -->
+            <div class="col-xl-3 col-md-6">
+                <div class="dashboard-card position-relative overflow-hidden">
+                    <div class="card-indicator indicator-primary"></div>
+                    <div class="card-body pl-3">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2 pl-3">
+                                <div class="text-xs font-weight-bold text-uppercase mb-1 text-muted">
+                                    Total Revenue
+                                </div>
+                                <div class="d-flex align-items-baseline mt-2">
+                                    <div class="card-value" id="totalRevenue"></div>
+                                    <div class="value-indicator positive">
+                                        <i class="fas fa-arrow-up"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-auto pr-3">
+                                <i class="fas fa-dollar-sign fa-2x text-primary opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Total Sales Card -->
+            <div class="col-xl-3 col-md-6">
+                <div class="dashboard-card position-relative overflow-hidden">
+                    <div class="card-indicator indicator-success"></div>
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2 pl-3">
+                                <div class="text-xs font-weight-bold text-uppercase mb-1 text-muted">
+                                    Total Sales
+                                </div>
+                                <div class="d-flex align-items-baseline mt-2">
+                                    <div class="card-value" id="totalSales"></div>
+                                    <div class="value-indicator positive">
+                                        <i class="fas fa-arrow-up"></i> 
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-auto pr-3">
+                                <i class="fas fa-shopping-cart fa-2x text-success opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Total Expenses Card -->
+            <div class="col-xl-3 col-md-6">
+                <div class="dashboard-card position-relative overflow-hidden">
+                    <div class="card-indicator indicator-info"></div>
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2 pl-3">
+                                <div class="text-xs font-weight-bold text-uppercase mb-1 text-muted">
+                                    Total Expenses
+                                </div>
+                                <div class="d-flex align-items-baseline mt-2">
+                                    <div class="card-value" id="totalExpenses"></div>
+                                    <div class="value-indicator negative">
+                                        <i class="fas fa-arrow-down"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-auto pr-3">
+                                <i class="fas fa-wallet fa-2x text-info opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Vouchers Card -->
+            <div class="col-xl-3 col-md-6">
+                <div class="dashboard-card position-relative overflow-hidden">
+                    <div class="card-indicator indicator-warning"></div>
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2 pl-3">
+                                <div class="text-xs font-weight-bold text-uppercase mb-1 text-muted">
+                                    Active Vouchers
+                                </div>
+                                <div class="d-flex align-items-baseline mt-2">
+                                    <div class="card-value" id="totalVouchers">{{count}}</div>
+                                    <div class="value-indicator positive">
+                                        <i class="fas fa-arrow-up"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-auto pr-3">
+                                <i class="fas fa-ticket-alt fa-2x text-warning opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Charts Row -->
+        <div class="row">
+            <!-- Revenue Trend Chart -->
+            <div class="col-xl-8">
+                <div class="dashboard-card mb-4">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                        <h6 class="m-0 font-weight-bold text-primary">Revenue Trend</h6>
+                        <div class="dropdown no-arrow">
+                            <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-ellipsis-v fa-sm fa-fw text-muted"></i>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="dropdownMenuLink">
+                                <li><a class="dropdown-item" href="#">Download CSV</a></li>
+                                <li><a class="dropdown-item" href="#">Print Report</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="#">View Details</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="revenue-trend-container">
+                            <canvas id="revenueTrendChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sale Types Distribution -->
+            <div class="col-xl-4">
+                <div class="dashboard-card mb-4">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                        <h6 class="m-0 font-weight-bold text-primary">Sales by Type</h6>
+                        <div class="dropdown no-arrow">
+                            <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink2" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-ellipsis-v fa-sm fa-fw text-muted"></i>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="dropdownMenuLink2">
+                                <li><a class="dropdown-item" href="#">Download CSV</a></li>
+                                <li><a class="dropdown-item" href="#">Print Report</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="sales-type-chart-container">
+                            <canvas id="salesTypeChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sales and Expenses Detail Row -->
+        <div class="row">
+            <!-- Detailed Sales Table -->
+            <div class="col-xl-8">
+                <div class="dashboard-card mb-4">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                        <h6 class="m-0 font-weight-bold text-primary">Daily Sales Performance</h6>
+                        <div class="dropdown no-arrow">
+                            <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink3" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-ellipsis-v fa-sm fa-fw text-muted"></i>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="dropdownMenuLink3">
+                                <li><a class="dropdown-item" href="#">Download CSV</a></li>
+                                <li><a class="dropdown-item" href="#">View All Sales</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="salesTable">
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Type</th>
+                                        <th>Amount</th>
+                                        <th>Client</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Vouchers List and Expenses Breakdown -->
+            <div class="col-xl-4">
+                <!-- Vouchers Card -->
+                <div class="dashboard-card mb-4 voucher-card">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                        <h6 class="m-0 font-weight-bold text-primary">Recent Vouchers</h6>
+                        <a href="#" class="text-xs text-primary">View All</a>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush">
+                            {% for voucher in vouchers %}
+                            <div class="list-group-item border-0 d-flex justify-content-between py-3 px-3 voucher-item">
+                                <div>
+                                    <h6 class="mb-0">{{voucher.name}}</h6>
+                                    <small class="text-muted">{{voucher.voucher_no}}</small>
+                                </div>
+                                <span class="badge bg-light text-dark rounded-pill align-self-center">Today</span>
+                            </div>
+                            {% endfor %}
+                            <!-- Sample vouchers if none exist -->
+                            {% if not vouchers %}
+                            <div class="list-group-item border-0 d-flex justify-content-between py-3 px-3 voucher-item">
+                                <div>
+                                    <h6 class="mb-0">Tech Conference</h6>
+                                    <small class="text-muted">VC-2025-001</small>
+                                </div>
+                                <span class="badge bg-light text-dark rounded-pill align-self-center">Today</span>
+                            </div>
+                            <div class="list-group-item border-0 d-flex justify-content-between py-3 px-3 voucher-item">
+                                <div>
+                                    <h6 class="mb-0">New User Promo</h6>
+                                    <small class="text-muted">VC-2025-002</small>
+                                </div>
+                                <span class="badge bg-light text-dark rounded-pill align-self-center">Today</span>
+                            </div>
+                            <div class="list-group-item border-0 d-flex justify-content-between py-3 px-3 voucher-item">
+                                <div>
+                                    <h6 class="mb-0">Monthly Special</h6>
+                                    <small class="text-muted">VC-2025-003</small>
+                                </div>
+                                <span class="badge bg-light text-dark rounded-pill align-self-center">Today</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Expenses Breakdown Chart -->
+                <div class="dashboard-card mb-4">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                        <h6 class="m-0 font-weight-bold text-primary">Expenses Breakdown</h6>
+                        <a href="#" class="text-xs text-primary">Details</a>
+                    </div>
+                    <div class="card-body">
+                        <div class="expenses-chart-container">
+                            <canvas id="expensesChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+</div>
+    
 {% endblock content %}
