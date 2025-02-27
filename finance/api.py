@@ -33,6 +33,8 @@ class SaleViewSet(viewsets.ModelViewSet):
             }
         }
         """
+        client_data = request.data.pop("client", {}) if isinstance(request.data.get("client"), dict) else {} #remove client data for serializer validation
+    
         serializer = self.get_serializer(data=request.data)
 
         if serializer.is_valid():
@@ -54,7 +56,6 @@ class SaleViewSet(viewsets.ModelViewSet):
 
             with transaction.atomic():
                 # Create Client
-                client_data = request.data.get("client", {})
                 client, created = Client.objects.get_or_create(
                     phonenumber=client_data.get("phonenumber"),
                     defaults={
