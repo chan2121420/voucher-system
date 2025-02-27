@@ -30,7 +30,7 @@ class VoucherListAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        vouchers = Vouchers.objects.filter(status='unused')
+        vouchers = Vouchers.objects.all()
         category = request.query_params.get('category')
         
         if category:
