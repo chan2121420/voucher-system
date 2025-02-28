@@ -48,8 +48,8 @@ class VoucherLogViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = VoucherLogs.objects.all()
     serializer_class = VoucherLogsSerializer
     permission_classes = [IsAuthenticated]
-    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
-    filterset_fields = ['voucher', 'user', 'action_type', 'created_at']
+    # filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    # filterset_fields = ['voucher', 'user', 'action_type', 'created_at']
     ordering_fields = ['created_at']
 
 
