@@ -50,7 +50,8 @@
                         <thead class="bg-primary text-light"  style="position: sticky; top: 0">
                             <tr>
                                 <th>date</th>
-                                <th>voucher no</th>
+                                <th>username</th>
+                                <th>password</th>
                                 <th>category</th>
                                 <th>actions</th>
                             </tr>
@@ -59,7 +60,8 @@
                             {% for voucher in vouchers %}
                                 <tr>
                                     <td>{{voucher.date_created}}</td>
-                                    <td>{{voucher.voucher_no}}</td>
+                                    <td>{{voucher.voucher_username}}</td>
+                                    <td>{{voucher.voucher_password}}</td>
                                     <td>{{voucher.file.category}}</td>
                                     <td>
                                         <a href="{% url 'vouchers:addVoucherUser' voucher.id %}">

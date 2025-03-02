@@ -34,7 +34,8 @@ class VoucherFile(models.Model):
         return reverse("VoucherFile_detail", kwargs={"pk": self.pk})
 
 class Vouchers(models.Model):
-    voucher_no = models.CharField(max_length=50)
+    voucher_password = models.CharField(max_length=50)
+    voucher_username = models.CharField(max_length=50)
     user = models.ForeignKey("users.User", on_delete=models.CASCADE)
     file = models.ForeignKey("vouchers.VoucherFile", on_delete=models.CASCADE)
     date_created = models.DateField(auto_now_add=True)

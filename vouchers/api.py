@@ -72,14 +72,13 @@ class VoucherCategoryViewSet(viewsets.ModelViewSet):
                 {"error": "Category with this name already exists"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
         return super().create(request, *args, **kwargs)
 
 
 class VoucherUserViewSet(viewsets.ModelViewSet):
     """
-    API endpoint for voucher users.
-    Allows CRUD operations on voucher users.
+        API endpoint for voucher users.
+        Allows CRUD operations on voucher users.
     """
     queryset = VoucherUser.objects.all()
     serializer_class = VoucherUserSerializer

@@ -5,6 +5,9 @@ from .serializers import *
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required 
 from vouchers.forms import AddVoucherFileForm, VoucherUserForm
+import csv
+from django.shortcuts import render, redirect, get_object_or_404
+from loguru import logger
 
 @login_required(login_url='/users/login/')
 def voucherFiles(request):
@@ -57,35 +60,56 @@ def addCategory(request):
     messages.success(request, 'category successfully added')
     return redirect('vouchers:voucherFiles')
 
-@login_required(login_url='/users/login/')    
+@login_required(login_url='/users/login/')
 def populateVouchers(request, pk):
     files = VoucherFile.objects.all()
-    try:
-        file = VoucherFile.objects.get(pk=pk)
-    except:
-        return render(request, '404.html')
+    
+    file = get_object_or_404(VoucherFile, pk=pk)
 
-    if file.status == 'not populated':
-        with open('staticfiles/media/'+ str(file.file), "r") as f:
-            for voucher_number in f:
+    if file.status == 'populated':
+        messages.error(request, "File is already populated")
+        return redirect('vouchers:voucherList')
+
+    file_path = f'staticfiles/media/{file.file}'
+   
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)  
+
+            row_count = 1
+
+            logger.info(f'Processing file: {file}')
+
+            vouchers_to_create = []  
+            for row in reader:
+                logger.info(f'processing row {row_count}')
                 voucher = Vouchers(
-                    user_id = request.user.id,
-                    voucher_no = voucher_number.strip(),
-                    file = file
+                    user=request.user,
+                    voucher_username=row["username"],  
+                    voucher_password=row["password"],  
+                    file=file,
+                    status='unused'
                 )
-                voucher.save()
-                voucher_log = VoucherLogs(
-                    user = request.user,
-                    action = f"{request.user} populated {file.name}"
-                )
-                voucher_log.save()
+                vouchers_to_create.append(voucher)
+                row_count += 1
+            
+            Vouchers.objects.bulk_create(vouchers_to_create)
+
+            VoucherLogs.objects.create(
+                user=request.user,
+                action=f"{request.user} populated {file.name}"
+            )
             file.status = 'populated'
             file.save()
-            messages.success(request, "Vouchers Successfully Populates." )
+
+            messages.success(request, "Vouchers Successfully Populated.")
             return redirect('vouchers:voucherList')
-    else:
-        messages.error(request, "File is already populated")
-    return render(request, 'vouchers/vouchers.html', {'voucherFiles': files}) 
+
+    except Exception as e:
+        messages.error(request, f"Error processing file: {str(e)}")
+
+    return render(request, 'vouchers/vouchers.html', {'voucherFiles': files})
+
 
 @login_required(login_url='/users/login/')
 def addVoucherUser(request, pk):
