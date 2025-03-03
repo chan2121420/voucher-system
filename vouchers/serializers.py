@@ -32,9 +32,9 @@ class VouchersSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Vouchers
-        fields = ['id', 'voucher_no', 'file', 'file_name', 'file_category', 'user', 'user_detail', 
+        fields = ['id', 'voucher_username', 'voucher_password', 'file', 'file_name', 'file_category', 'user', 'user_detail', 
                   'date_created', 'date_used', 'status']
-        read_only_fields = ['date_created', 'date_used']
+        read_only_fields = ['id', 'date_created', 'date_used']
 
 
 class VoucherLogsSerializer(serializers.ModelSerializer):
