@@ -43,6 +43,7 @@ class SaleSerializer(serializers.ModelSerializer):
         many=True, 
         queryset=Sale.voucher.field.related_model.objects.all()
     )
+
     client = serializers.PrimaryKeyRelatedField(
         queryset=Client.objects.all(), 
         required=False
@@ -52,6 +53,7 @@ class SaleSerializer(serializers.ModelSerializer):
         model = Sale
         fields = ['id', 'voucher', 'amount', 'sale_type', 'date', 'cashier', 'client']
         read_only_fields = ['id', 'date']
+    
 
 class SaleReturnSerializer(serializers.ModelSerializer):
     """

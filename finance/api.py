@@ -72,7 +72,19 @@ class SaleViewSet(viewsets.ModelViewSet):
             
             logger.info(f"Sale {sale.id} created by {request.user} with Client {client.id}")
 
-            return Response(SaleSerializer(sale).data, status=status.HTTP_201_CREATED)
+            sales_data = SaleSerializer(sale).data
+            vouchers_data =list(Vouchers.objects.filter(id__in=vouchers).values(
+                'id',
+                'voucher_username',
+                'voucher_password'
+            ))
+
+            data = {
+                'sales_data':sales_data,
+                'vouchers_data':vouchers_data
+            }
+
+            return Response(data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status.HTTP_400_BAD_REQUEST)
 

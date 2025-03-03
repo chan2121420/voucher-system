@@ -48,7 +48,7 @@ class Vouchers(models.Model):
         verbose_name_plural = _("Vouchers")
 
     def __str__(self):
-        return self.voucher_no
+        return self.user
 
     def get_absolute_url(self):
         return reverse("Vouchers_detail", kwargs={"pk": self.pk})
