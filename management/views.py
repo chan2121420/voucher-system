@@ -32,12 +32,14 @@ def sales(filter, start_day=None, end_day=None):
     
     if filter == 'today':
         total_sales = Sale.objects.filter(date=today).aggregate(Sum('amount'))['amount__sum']
+
         return total_sales if total_sales else 0
     
     elif filter == 'week':
         start_of_week = today - timedelta(days=today.weekday())  
         end_of_week = start_of_week + timedelta(days=6) 
         total_sales = Sale.objects.filter(date__range=[start_of_week, end_of_week]).aggregate(Sum('amount'))['amount__sum']
+
         return total_sales if total_sales else 0
     
     elif filter == 'month':
@@ -57,7 +59,7 @@ def sales(filter, start_day=None, end_day=None):
         total_sales = Sale.objects.filter(date__range=[start_day, end_day]).aggregate(Sum('amount'))['amount__sum']
         return total_sales if total_sales else 0
     
-    return 0
+    return Sale.objects.all().aggregate(Sum('amount'))['amount__sum']
 
 
 

@@ -164,7 +164,7 @@
                     <h4 class="mb-0">Dashboard</h4>
                     <p class="text-muted mb-0">
                         <span id="dateRangeText">Today</span>
-                        <span class="date-badge" id="currentDateBadge">{{ total_sales }}</span>
+                        <span class="date-badge" id="currentDateBadge">${{ total_sales }}</span>
                     </p>
                 </div>
                 <div class="col-md-6">
@@ -406,27 +406,13 @@
                             {% endfor %}
                             <!-- Sample vouchers if none exist -->
                             {% if not vouchers %}
-                            <div class="list-group-item border-0 d-flex justify-content-between py-3 px-3 voucher-item">
-                                <div>
-                                    <h6 class="mb-0">Tech Conference</h6>
-                                    <small class="text-muted">VC-2025-001</small>
+                                <div class="list-group-item border-0 d-flex justify-content-between py-3 px-3 voucher-item">
+                                    <div>
+                                        <h6 class="mb-0">example</h6>
+                                        <small class="text-muted">example</small>
+                                    </div>
+                                    <span class="badge bg-light text-dark rounded-pill align-self-center">Today</span>
                                 </div>
-                                <span class="badge bg-light text-dark rounded-pill align-self-center">Today</span>
-                            </div>
-                            <div class="list-group-item border-0 d-flex justify-content-between py-3 px-3 voucher-item">
-                                <div>
-                                    <h6 class="mb-0">New User Promo</h6>
-                                    <small class="text-muted">VC-2025-002</small>
-                                </div>
-                                <span class="badge bg-light text-dark rounded-pill align-self-center">Today</span>
-                            </div>
-                            <div class="list-group-item border-0 d-flex justify-content-between py-3 px-3 voucher-item">
-                                <div>
-                                    <h6 class="mb-0">Monthly Special</h6>
-                                    <small class="text-muted">VC-2025-003</small>
-                                </div>
-                                <span class="badge bg-light text-dark rounded-pill align-self-center">Today</span>
-                            </div>
                             {% endif %}
                         </div>
                     </div>
