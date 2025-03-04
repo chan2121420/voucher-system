@@ -1,0 +1,12 @@
+{% for voucher in vouchers %}
+<tr>
+    <td>{{voucher.date_created|date:"M d, Y"}}</td>
+    <td>{{voucher.voucher_username}}</td>
+    <td>
+    <span class="password-text">{{voucher.voucher_password}}</span>
+    </td>
+    <td>
+    <span class="badge bg-light text-dark">{{voucher.file.category}}</span>
+    </td>
+</tr>
+{% endfor %}

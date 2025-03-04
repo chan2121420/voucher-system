@@ -1,78 +1,277 @@
 {% extends 'base.html' %}
 {% load static %}
-{% block title %}voucher logs{% endblock title %}
+{% block title %}Voucher Logs{% endblock title %}
 {% block content %}
-<div class="vouchers-logs mt-4">
-    <div class="row">
-        <div class="col-12">
-            <div class="content container">
-                <div class="choose-voucher mt-2">
-                    <div class="row">
-                         <div class="d-flex align-items-center justify-content-between">
-                            <form method="get" class="d-flex align-items-center">
-                                <label>Search</label>
-                                <div class='px-2'>
-                                    <input type="search" name="q" class="form-control" placeholder="voucher no">
-                                </div>
-                            </form>
-                            <div>
-                                <a href="{% url 'vouchers:voucherFiles' %}" class="btn btn-primary btn-sm">
-                                    <i class='bx bx-plus-circle'></i>
-                                    <span>Add voucher file</span>
-                                </a>
-                            </div>
-                         </div>
-                        <div class="d-flex justify-content-between align-items-center mt-4">
-                            <h4 class="py-2 mt-1">Voucher Logs</h4>
-                            <div class="d-flex">
-                                <form method="get">
-                                    <input type="text" name="q" value='' hidden>
-                                    <button class="btn btn-light bnt-sm">
-                                        All
-                                    </button>
-                                </form>
-                                <form method="get">
-                                    <input type="text" name="q" value='create' hidden>
-                                    <button class="btn btn-light bnt-sm">
-                                        creation
-                                    </button>
-                                </form>
-                                <form method="get">
-                                    <input type="text" name="q" value='print' hidden>
-                                    <button class="btn btn-light bnt-sm">
-                                        printed
-                                    </button>
-                                </form>
-                                <form method="get">
-                                    <input type="text" name="q" value='populate' hidden>
-                                    <button class="btn btn-light bnt-sm">
-                                        populated
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="voucher-table">
-                    <table class="table table-hover table-responsive mt-2">
-                        <thead class="bg-primary text-light"  style="position: sticky; top: 0">
-                            <tr>
-                                <th>date</th>
-                                <th>details</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for log in logs %}
-                                <tr>
-                                    <td>{{log.date_created}}</td>
-                                    <td>{{log.action}}</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+<style>
+    .voucher-logs-page {
+      max-width: 100%;
+    }
+    
+    .filter-buttons form {
+      display: inline-block;
+    }
+    
+    .table-container {
+      min-height: 300px; 
+    }
+    
+    .table-responsive {
+      overflow-x: auto;
+      margin: 0 -0.75rem;
+    }
+    
+    @media (min-width: 768px) {
+      .table-responsive {
+        margin: 0;
+      }
+    }
+    
+    .table th {
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    
+    .table td {
+      vertical-align: middle;
+    }
+    
+    .loading-indicator {
+      position: sticky;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 10px;
+      border-top: 1px solid #eee;
+      z-index: 50;
+      text-align: center;
+    }
+    
+    .loading-content {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .new-row {
+      opacity: 0;
+      animation: fadeIn 0.5s forwards;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+</style>
+<div class="voucher-logs-page p-3 p-md-4">
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-3 p-md-4">
+      <!-- Search and Action Buttons -->
+      <div class="d-flex flex-column flex-md-row justify-content-between gap-3 mb-4">
+        <form method="get" class="search-form" id="searchForm">
+          <div class="input-group">
+            <span class="input-group-text bg-light border-end-0">
+              <i class="bx bx-search"></i>
+            </span>
+            <input type="search" name="q" class="form-control border-start-0" placeholder="Search voucher no" value="{{ request.GET.q|default:'' }}">
+            <button type="submit" class="btn btn-primary">
+              Search
+            </button>
+          </div>
+        </form>
+        
+        <a href="{% url 'vouchers:voucherFiles' %}" class="btn btn-primary">
+          <i class="bx bx-plus-circle me-2"></i>Add Voucher File
+        </a>
+      </div>
+
+      <!-- Title and Filter Buttons -->
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 gap-3">
+        <h4 class="mb-0">Voucher Logs</h4>
+        
+        <div class="filter-buttons d-flex flex-wrap gap-2">
+          <form method="get" class="filter-form">
+            <input type="text" name="q" value='' hidden>
+            <button class="btn {% if current_filter == '' %}btn-primary{% else %}btn-outline-primary{% endif %} btn-sm">
+              All
+            </button>
+          </form>
+          <form method="get" class="filter-form">
+            <input type="text" name="q" value='create' hidden>
+            <button class="btn {% if current_filter == 'create' %}btn-primary{% else %}btn-outline-primary{% endif %} btn-sm">
+              Creation
+            </button>
+          </form>
+          <form method="get" class="filter-form">
+            <input type="text" name="q" value='print' hidden>
+            <button class="btn {% if current_filter == 'print' %}btn-primary{% else %}btn-outline-primary{% endif %} btn-sm">
+              Printed
+            </button>
+          </form>
+          <form method="get" class="filter-form">
+            <input type="text" name="q" value='populate' hidden>
+            <button class="btn {% if current_filter == 'populate' %}btn-primary{% else %}btn-outline-primary{% endif %} btn-sm">
+              Populated
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Logs Table Container with Fixed Height -->
+      <div class="table-container position-relative">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle" id="logsTable">
+            <thead class="bg-primary text-white" style="position: sticky; top: 0; z-index: 100;">
+              <tr>
+                <th>Date</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody id="logsTableBody">
+              {% include 'vouchers/partials/log_items.html' %}
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Fixed position loading indicator at bottom of table -->
+        <div id="loadingIndicator" class="loading-indicator d-none">
+          <div class="loading-content">
+            <div class="spinner-border spinner-border-sm text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
             </div>
-        </div>                            
-    </div>                                                       
+            <span class="ms-2 text-muted">Loading more...</span>
+          </div>
+        </div>
+        
+        <!-- No more logs indicator -->
+        <div id="noMoreLogsIndicator" class="text-center py-3 d-none">
+          <p class="text-muted mb-0">End of logs reached</p>
+        </div>
+      </div>
+      
+      <!-- Empty State (when no logs) -->
+      {% if not logs %}
+      <div class="text-center py-5" id="emptyState">
+        <i class="bx bx-history bx-lg text-muted"></i>
+        <p class="mt-3 text-muted">No logs found</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
 </div>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        let currentPage = 1;
+        let loading = false;
+        let hasMore = {{ has_more|lower }};
+        let nextPage = {{ next_page|default:'null' }};
+        const logsTableBody = document.getElementById('logsTableBody');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const noMoreLogsIndicator = document.getElementById('noMoreLogsIndicator');
+        const emptyState = document.getElementById('emptyState');
+        let scrollTimer;
+        
+        function getCurrentQuery() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('q') || '';
+        }
+        
+        function loadMoreLogs() {
+            if (loading || !hasMore) return;
+            
+            loading = true;
+            loadingIndicator.classList.remove('d-none');
+            
+            const scrollPosition = window.scrollY;
+            const query = getCurrentQuery();
+            const url = `?page=${nextPage}${query ? '&q=' + query : ''}`;
+            
+            fetch(url, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const fragment = document.createDocumentFragment();
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = data.html;
+                
+                const newRows = tempDiv.querySelectorAll('tr');
+                
+                if (newRows.length > 0) {
+                    newRows.forEach(row => {
+                        row.classList.add('new-row');
+                        fragment.appendChild(row);
+                    });
+                    
+                    logsTableBody.appendChild(fragment);
+                }
+                
+                hasMore = data.has_more;
+                nextPage = data.next_page;
+                
+                if (!hasMore) {
+                    noMoreLogsIndicator.classList.remove('d-none');
+                }
+                
+                setTimeout(() => {
+                    loadingIndicator.classList.add('d-none');
+                    loading = false;
+                }, 300);
+            })
+            .catch(error => {
+                console.error('Error loading more logs:', error);
+                loadingIndicator.classList.add('d-none');
+                loading = false;
+            });
+        }
+        
+        function handleScroll() {
+            clearTimeout(scrollTimer);
+            scrollTimer = setTimeout(() => {
+                if (loading || !hasMore) return;
+                
+                const windowHeight = window.innerHeight;
+                const documentHeight = document.documentElement.scrollHeight;
+                const scrollTop = window.scrollY;
+                
+                if (documentHeight - (scrollTop + windowHeight) < 300) {
+                    loadMoreLogs();
+                }
+            }, 100);
+        }
+        
+        window.addEventListener('scroll', handleScroll);
+        
+        if ('IntersectionObserver' in window) {
+            const loadTrigger = document.createElement('div');
+            loadTrigger.className = 'load-trigger';
+            loadTrigger.style.height = '1px';
+            loadTrigger.style.width = '100%';
+            loadTrigger.style.marginTop = '-300px';
+            document.querySelector('.table-container').appendChild(loadTrigger);
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && hasMore && !loading) {
+                        loadMoreLogs();
+                    }
+                });
+            }, { rootMargin: '0px 0px 300px 0px' });
+            
+            observer.observe(loadTrigger);
+        }
+        
+        document.querySelectorAll('.filter-form').forEach(form => {
+            form.addEventListener('submit', function() {
+                currentPage = 1;
+            });
+        });
+        
+        document.getElementById('searchForm').addEventListener('submit', function() {
+            currentPage = 1;
+        });
+    });
+</script>
 {% endblock content %}

@@ -8,6 +8,8 @@ from vouchers.forms import AddVoucherFileForm, VoucherUserForm
 import csv
 from django.shortcuts import render, redirect, get_object_or_404
 from loguru import logger
+from django.http import JsonResponse
+from django.template.loader import render_to_string
 
 @login_required(login_url='/users/login/')
 def voucherFiles(request):
@@ -32,15 +34,41 @@ def voucherFiles(request):
 
 @login_required(login_url='/users/login/')
 def vouchersList(request):
+    page = int(request.GET.get('page', 1))
+    page_size = 20
+
     vou = Vouchers.objects.all()
     categories = VoucherCategory.objects.all()
+
     q =  request.GET.get('q') if request.GET.get('q') != None else ''
+
     try:
         filtered_vouchers = vou.filter(file__category = q) & vou.filter(status = 'unused')
     except:
         filtered_vouchers = vou.all() & vou.filter(status = 'unused')
 
+    start = (page - 1) * page_size
+    end = start + page_size
+
+    total_vouchers = filtered_vouchers.count()
+    has_more = total_vouchers > end
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        html = render_to_string(
+            'vouchers/partials/voucher_items.html',
+            {'vouchers': filtered_vouchers}
+        )
+
+        return JsonResponse({
+            'html':html,
+            'has_more':has_more,
+            'next_page': page + 1 if has_more else None
+        })
+
+
     return render(request, 'vouchers/vouchers_list.html', {
+        'has_more':has_more,
+        'next_page': page + 1 if has_more else None,
         'vouchers': filtered_vouchers,
         'categories':categories
     })
@@ -152,26 +180,49 @@ def printVoucher(request, pk):
 
 @login_required(login_url='/users/login/')
 def voucherLog(request):
-    logs = VoucherLogs.objects.all()
+    page = int(request.GET.get('page', 1))
+    page_size = 20  
     q = request.GET.get('q') if request.GET.get('q') != None else ''
+    
+    logs = VoucherLogs.objects.all().order_by('-date_created')  
 
+    # Apply filters
     if q == 'create':
-        return render(request, 'vouchers/voucherLogs.html', {
-            'logs': logs.filter(Q(action__icontains = q ))
-        })
+        logs = logs.filter(Q(action__icontains=q))
     elif q == 'print':
-        return render(request, 'vouchers/voucherLogs.html', {
-            'logs': logs.filter(Q(action__icontains = q ))
-        })
+        logs = logs.filter(Q(action__icontains=q))
     elif q == 'populate':
-        return render(request, 'vouchers/voucherLogs.html', {
-            'logs': logs.filter(Q(action__icontains = q ))
+        logs = logs.filter(Q(action__icontains=q))
+    elif q: 
+        logs = logs.filter(
+            Q(user__username__icontains=q) |
+            Q(action__icontains=q) |
+            Q(date_created__icontains=q)
+        )
+    
+    start = (page - 1) * page_size
+    end = start + page_size
+    
+    total_logs = logs.count()
+    has_more = total_logs > end
+    
+    logs_page = logs[start:end]
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest': 
+        html = render_to_string(
+            'vouchers/partials/log_items.html', 
+            {'logs': logs_page}
+        )
+        
+        return JsonResponse({
+            'html': html,
+            'has_more': has_more,
+            'next_page': page + 1 if has_more else None
         })
     
-    return render(request, 'vouchers/voucherLogs.html',
-        {'logs': logs or VoucherLogs.objects.filter(
-            Q(user__username__icontains = q) |
-            Q(action__icontains = q)|
-            Q(date_created__icontains = q)
-        )}
-    )
+    return render(request, 'vouchers/voucherLogs.html', {
+        'logs': logs_page,
+        'has_more': has_more,
+        'next_page': page + 1 if has_more else None,
+        'current_filter': q
+    })
