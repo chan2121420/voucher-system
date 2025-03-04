@@ -24,7 +24,7 @@ def dashboard(request):
         'count':vouchers.count(),
         
         #totals
-        'total_sales':Sale.objects.filter(date=today).aggregate(Sum('amount'))['amount__sum']
+        'total_sales':Sale.objects.filter(date=today).aggregate(Sum('amount'))['amount__sum'] or 0.00
     })
 
 
