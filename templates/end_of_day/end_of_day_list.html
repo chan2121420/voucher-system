@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}End Of Day List{% endblock title %}
+{% block content %}
+<style>
+    .category-filters form {
+        display: inline-block;
+    }
+
+    @media (max-width: 768px) {
+        .table-responsive {
+            border-radius: 0.25rem;
+        }
+
+        .data-text {
+            word-break: break-all;
+        }
+    }
+
+    .table th {
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .table td {
+        vertical-align: middle;
+    }
+
+    .loading-indicator {
+        position: sticky;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 10px;
+        border-top: 1px solid #eee;
+        z-index: 50;
+        text-align: center;
+    }
+
+    .loading-content {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .new-row {
+        opacity: 0;
+        animation: fadeIn 0.5s forwards;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+</style>
+
+<div class="py-4">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-6 mb-3 mb-md-0 gap-3">
+                    <form method="get">
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0">
+                                <i class="bx bx-search"></i>
+                            </span>
+                            <input type="search" name="q" class="form-control border-start-0"
+                                placeholder="Search EOD ID">
+                            <button type="submit" class="btn btn-primary">Search</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex flex-wrap gap-2 justify-content-md-end">
+                        <form method="POST" action="{% url 'finance:end_of_day' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bx bx-plus-circle me-1"></i>Create EOD
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3">
+                <h4 class="mb-3 mb-md-0">End of Day List</h4>
+                <div class="category-filters d-flex flex-wrap gap-2">
+                    {% for category in categories %}
+                    <form method="get">
+                        <input type="text" name="q" value="{{category.id}}" hidden>
+                        <button
+                            class="btn btn-sm {% if request.GET.q == category.id|stringformat:'s' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            {{category.name}}
+                        </button>
+                    </form>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover table-striped align-middle">
+                    <thead class="bg-primary text-white">
+                        <tr>
+                            <th>#</th>
+                            <th>Date</th>
+                            <th>Amount</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="eodTableBody">
+                        {% include 'end_of_day/partials/eod_items.html' %}
+                    </tbody>
+                </table>
+            </div>
+            <div id="loadingIndicator" class="loading-indicator d-none">
+                <div class="loading-content">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <span class="ms-2 text-muted">Loading more...</span>
+                </div>
+            </div>
+            <div id="noMoreLogsIndicator" class="text-center py-3 d-none">
+                <p class="text-muted mb-0">End of records reached</p>
+            </div>
+        </div>
+        {% if not eods %}
+        <div class="text-center py-5" id="emptyState">
+            <i class="bx bx-history bx-lg text-muted"></i>
+            <p class="mt-3 text-muted">No end of day records found</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        let currentPage = 1;
+        let loadingMore = false;
+        let hasMore = {{ has_more| lower}};
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const noMoreLogsIndicator = document.getElementById('noMoreLogsIndicator');
+    const tableBody = document.getElementById('eodTableBody');
+
+    function loadMoreItems() {
+        if (loadingMore || !hasMore) return;
+
+        loadingMore = true;
+        loadingIndicator.classList.remove('d-none');
+
+        const nextPage = currentPage + 1;
+
+        fetch(`?page=${nextPage}`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data)
+                loadingMore = false;
+                loadingIndicator.classList.add('d-none');
+
+                if (data.html) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = data.html;
+
+                    const rows = tempDiv.querySelectorAll('tr');
+                    rows.forEach(row => row.classList.add('new-row'));
+
+                    tableBody.insertAdjacentHTML('beforeend', data.html);
+                }
+
+                hasMore = data.has_more;
+                currentPage = data.next_page || currentPage;
+
+                if (!hasMore) {
+                    noMoreLogsIndicator.classList.remove('d-none');
+                }
+            })
+            .catch(error => {
+                console.error('Error loading more items:', error);
+                loadingMore = false;
+                loadingIndicator.classList.add('d-none');
+            });
+    }
+
+    window.addEventListener('scroll', function () {
+        if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) {
+            loadMoreItems();
+        }
+    });
+  });
+</script>
+{% endblock content %}

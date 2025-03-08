@@ -65,7 +65,7 @@ class SaleViewSet(viewsets.ModelViewSet):
                 )
 
                 # Bulk update vouchers as sold
-                Vouchers.objects.filter(pk__in=vouchers).update(status="sold")
+                Vouchers.objects.filter(pk__in=vouchers).update(status="sold", active=True)
 
                 # Save sale and associate client
                 sale = serializer.save(client=client)

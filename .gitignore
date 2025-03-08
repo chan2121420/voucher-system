@@ -21,4 +21,5 @@ dev/*.pycgit
 *base.py
 *.pyc
 .env
+/media
 

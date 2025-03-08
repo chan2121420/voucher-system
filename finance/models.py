@@ -12,6 +12,7 @@ class Sale(models.Model):
     date = models.DateTimeField(auto_now_add=True)
     cashier = models.ForeignKey("users.User", on_delete=models.CASCADE)
     client = models.ForeignKey("finance.Client", on_delete=models.CASCADE, null=True)
+  
 
     class Meta:
         ordering = ['-date']
@@ -38,4 +39,15 @@ class Client(models.Model):
 
     def __str__(self):
         return self.name
+    
+class EndOfDay(models.Model):
+    date = models.DateField()
+    pdf = models.FileField(upload_to='end_of_days/', null=True, blank=True)
+    amount = models.DecimalField(default=0, max_digits=5, decimal_places=2)
+
+class EndOfDayItem(models.Model):
+    eod = models.ForeignKey(EndOfDay, on_delete=models.CASCADE, null=True)
+    sale = models.ForeignKey(Sale, on_delete=models.CASCADE)
+
+
 

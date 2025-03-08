@@ -41,7 +41,9 @@ class Vouchers(models.Model):
     date_created = models.DateField(auto_now_add=True)
     date_used = models.DateField(auto_now=True)
     status = models.CharField(max_length=50, default='unused')
-    
+    active = models.BooleanField(default=False, null=True)
+    expiry_time = models.DateTimeField(null=True)
+
     class Meta:
         ordering = ['-date_created']
         verbose_name = _("Vouchers")

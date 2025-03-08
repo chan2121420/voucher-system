@@ -2,7 +2,7 @@
 {% load static %}
 {% block title %}Dashboard{% endblock title %}
 {% block content %}
-<div>    
+<div>
     <style>
         :root {
             --primary: #4e73df;
@@ -16,12 +16,12 @@
             --card-border-radius: 0.5rem;
             --transition-speed: 0.3s;
         }
-        
+
         dash {
             background-color: #f8f9fc;
             font-family: 'Nunito', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
-        
+
         .dashboard-card {
             border-radius: var(--card-border-radius);
             border: none;
@@ -29,11 +29,11 @@
             transition: transform var(--transition-speed);
             margin-bottom: 1.5rem;
         }
-        
+
         .dashboard-card:hover {
             transform: translateY(-5px);
         }
-        
+
         .card-indicator {
             position: absolute;
             top: 0;
@@ -42,25 +42,41 @@
             width: 6px;
             border-radius: var(--card-border-radius) 0 0 var(--card-border-radius);
         }
-        
-        .indicator-primary { background-color: var(--primary); }
-        .indicator-success { background-color: var(--success); }
-        .indicator-info { background-color: var(--info); }
-        .indicator-warning { background-color: var(--warning); }
-        
+
+        .indicator-primary {
+            background-color: var(--primary);
+        }
+
+        .indicator-success {
+            background-color: var(--success);
+        }
+
+        .indicator-info {
+            background-color: var(--info);
+        }
+
+        .indicator-warning {
+            background-color: var(--warning);
+        }
+
         .card-value {
             font-size: 2rem;
             font-weight: 700;
         }
-        
+
         .value-indicator {
             font-size: 0.875rem;
             margin-left: 0.25rem;
         }
-        
-        .value-indicator.positive { color: var(--success); }
-        .value-indicator.negative { color: var(--danger); }
-        
+
+        .value-indicator.positive {
+            color: var(--success);
+        }
+
+        .value-indicator.negative {
+            color: var(--danger);
+        }
+
         .filter-container {
             background-color: white;
             border-radius: var(--card-border-radius);
@@ -68,74 +84,76 @@
             padding: 1rem;
             margin-bottom: 1.5rem;
         }
-        
+
         .voucher-card {
             max-height: 400px;
             overflow-y: auto;
         }
-        
+
         .voucher-item {
             background-color: rgba(78, 115, 223, 0.1);
             margin-bottom: 0.5rem;
             border-radius: 0.25rem;
             transition: all var(--transition-speed);
         }
-        
+
         .voucher-item:hover {
             background-color: rgba(78, 115, 223, 0.2);
         }
-        
+
         .navbar-brand {
             font-weight: 800;
             font-size: 1.5rem;
         }
-        
+
         .custom-date-range {
             display: none;
         }
-        
-        .sales-type-chart-container, .revenue-trend-container, .expenses-chart-container {
+
+        .sales-type-chart-container,
+        .revenue-trend-container,
+        .expenses-chart-container {
             position: relative;
             height: 300px;
         }
-        
+
         .bg-gradient-primary {
             background: linear-gradient(135deg, var(--primary) 0%, #224abe 100%);
             color: white;
         }
-        
+
         .bg-gradient-success {
             background: linear-gradient(135deg, var(--success) 0%, #13855c 100%);
             color: white;
         }
-        
+
         .bg-gradient-info {
             background: linear-gradient(135deg, var(--info) 0%, #2c9fad 100%);
             color: white;
         }
-        
+
         .bg-gradient-warning {
             background: linear-gradient(135deg, var(--warning) 0%, #f4b30d 100%);
             color: white;
         }
-        
+
         .modern-navbar {
             background-color: white;
             box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
         }
-        
+
         .custom-tab {
             position: relative;
             cursor: pointer;
             padding: 0.5rem 1rem;
             transition: all var(--transition-speed);
         }
-        
+
         .custom-tab.active {
             color: var(--primary);
             font-weight: 600;
         }
-        
+
         .custom-tab.active::after {
             content: '';
             position: absolute;
@@ -146,7 +164,7 @@
             background-color: var(--primary);
             border-radius: 3px 3px 0 0;
         }
-        
+
         .date-badge {
             background-color: var(--light);
             border-radius: 50rem;
@@ -170,11 +188,16 @@
                 <div class="col-md-6">
                     <div class="d-flex justify-content-md-end">
                         <div class="btn-group" role="group">
-                            <button type="button" class="btn btn-sm btn-primary filter-btn active" data-filter="day">Day</button>
-                            <button type="button" class="btn btn-sm btn-outline-primary filter-btn px-2" data-filter="week">Week</button>
-                            <button type="button" class="btn btn-sm btn-outline-primary filter-btn" data-filter="month">Month</button>
-                            <button type="button" class="btn btn-sm btn-outline-primary filter-btn px-2" data-filter="year">Year</button>
-                            <button type="button" class="btn btn-sm btn-outline-primary filter-btn" data-filter="custom">Custom</button>
+                            <button type="button" class="btn btn-sm btn-primary filter-btn active"
+                                data-filter="day">Day</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary filter-btn px-2"
+                                data-filter="week">Week</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary filter-btn"
+                                data-filter="month">Month</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary filter-btn px-2"
+                                data-filter="year">Year</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary filter-btn"
+                                data-filter="custom">Custom</button>
                         </div>
                     </div>
                     <div class="custom-date-range mt-2 justify-content-md-end">
@@ -193,7 +216,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Summary Cards -->
         <div class="row">
             <!-- Total Revenue Card -->
@@ -207,7 +230,7 @@
                                     Total Revenue
                                 </div>
                                 <div class="d-flex align-items-baseline mt-2">
-                                    <div class="card-value" id="totalRevenue"></div>
+                                    <div class="card-value" id="totalRevenue">{{ total_sales }}</div>
                                     <div class="value-indicator positive">
                                         <i class="fas fa-arrow-up"></i>
                                     </div>
@@ -220,7 +243,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Total Sales Card -->
             <div class="col-xl-3 col-md-6">
                 <div class="dashboard-card position-relative overflow-hidden">
@@ -232,9 +255,9 @@
                                     Total Sales
                                 </div>
                                 <div class="d-flex align-items-baseline mt-2">
-                                    <div class="card-value" id="totalSales"></div>
+                                    <div class="card-value" id="totalSales">{{ total_sales }}</div>
                                     <div class="value-indicator positive">
-                                        <i class="fas fa-arrow-up"></i> 
+                                        <i class="fas fa-arrow-up"></i>
                                     </div>
                                 </div>
                             </div>
@@ -245,7 +268,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Total Expenses Card -->
             <div class="col-xl-3 col-md-6">
                 <div class="dashboard-card position-relative overflow-hidden">
@@ -257,7 +280,7 @@
                                     Total Expenses
                                 </div>
                                 <div class="d-flex align-items-baseline mt-2">
-                                    <div class="card-value" id="totalExpenses"></div>
+                                    <div class="card-value" id="totalExpenses">0.00</div>
                                     <div class="value-indicator negative">
                                         <i class="fas fa-arrow-down"></i>
                                     </div>
@@ -270,7 +293,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Vouchers Card -->
             <div class="col-xl-3 col-md-6">
                 <div class="dashboard-card position-relative overflow-hidden">
@@ -296,7 +319,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Charts Row -->
         <div class="row">
             <!-- Revenue Trend Chart -->
@@ -305,13 +328,16 @@
                     <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
                         <h6 class="m-0 font-weight-bold text-primary">Revenue Trend</h6>
                         <div class="dropdown no-arrow">
-                            <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
+                            <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink"
+                                data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="fas fa-ellipsis-v fa-sm fa-fw text-muted"></i>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="dropdownMenuLink">
                                 <li><a class="dropdown-item" href="#">Download CSV</a></li>
                                 <li><a class="dropdown-item" href="#">Print Report</a></li>
-                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <hr class="dropdown-divider">
+                                </li>
                                 <li><a class="dropdown-item" href="#">View Details</a></li>
                             </ul>
                         </div>
@@ -330,7 +356,8 @@
                     <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
                         <h6 class="m-0 font-weight-bold text-primary">Sales by Type</h6>
                         <div class="dropdown no-arrow">
-                            <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink2" data-bs-toggle="dropdown" aria-expanded="false">
+                            <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink2"
+                                data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="fas fa-ellipsis-v fa-sm fa-fw text-muted"></i>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="dropdownMenuLink2">
@@ -347,7 +374,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Sales and Expenses Detail Row -->
         <div class="row">
             <!-- Detailed Sales Table -->
@@ -356,7 +383,8 @@
                     <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
                         <h6 class="m-0 font-weight-bold text-primary">Daily Sales Performance</h6>
                         <div class="dropdown no-arrow">
-                            <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink3" data-bs-toggle="dropdown" aria-expanded="false">
+                            <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink3"
+                                data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="fas fa-ellipsis-v fa-sm fa-fw text-muted"></i>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="dropdownMenuLink3">
@@ -384,7 +412,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Vouchers List and Expenses Breakdown -->
             <div class="col-xl-4">
                 <!-- Vouchers Card -->
@@ -406,18 +434,18 @@
                             {% endfor %}
                             <!-- Sample vouchers if none exist -->
                             {% if not vouchers %}
-                                <div class="list-group-item border-0 d-flex justify-content-between py-3 px-3 voucher-item">
-                                    <div>
-                                        <h6 class="mb-0">example</h6>
-                                        <small class="text-muted">example</small>
-                                    </div>
-                                    <span class="badge bg-light text-dark rounded-pill align-self-center">Today</span>
+                            <div class="list-group-item border-0 d-flex justify-content-between py-3 px-3 voucher-item">
+                                <div>
+                                    <h6 class="mb-0">example</h6>
+                                    <small class="text-muted">example</small>
                                 </div>
+                                <span class="badge bg-light text-dark rounded-pill align-self-center">Today</span>
+                            </div>
                             {% endif %}
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Expenses Breakdown Chart -->
                 <div class="dashboard-card mb-4">
                     <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
@@ -434,5 +462,5 @@
         </div>
     </div>
 </div>
-    
+
 {% endblock content %}

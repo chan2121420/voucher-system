@@ -1,0 +1,133 @@
+{% for eod in eods %}
+<tr>
+    <td><small>{{ forloop.counter }}</small></td>
+    <td><small>{{ eod.date|date:"M d, Y" }}</small></td>
+    <td class="data-text"><small>{{ eod.amount }}</small></td>
+    <td>
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-primary show-eod-items" data-id="{{ eod.id }}">
+                <i class="bx bx-show"></i>
+            </button>
+
+            <button data-url="{% url 'finance:download_eod' eod.id %}"
+                class="download btn btn-sm btn-outline-secondary">
+                <i class="bx bx-file"></i>
+            </button>
+        </div>
+    </td>
+</tr>
+{% endfor %}
+
+<div class="modal fade" id="eodItemsModal" tabindex="-1" aria-labelledby="eodItemsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">End of Day Items</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Loader -->
+                <div id="modalLoader" class="text-center my-3">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+                <!-- EOD Items Content -->
+                <div id="eodItemsContent"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".download").forEach(button => {
+            button.addEventListener("click", function (event) {
+                event.preventDefault();
+
+                let downloadUrl = this.dataset.url;
+                let startTime = Date.now();
+                let originalContent = this.innerHTML;
+
+                this.innerHTML = `<div class="spinner-border text-primary text-sm" role="status">
+                                <span class="visually-hidden">Downloading...</span>
+                            </div>`;
+
+                Toastify({
+                    text: "Downloading PDF...",
+                    duration: 3000,
+                    close: true,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: "#007bff",
+                }).showToast();
+
+                let iframe = document.createElement("iframe");
+                iframe.style.display = "none";
+                iframe.src = downloadUrl;
+                document.body.appendChild(iframe);
+
+                setTimeout(() => {
+                    document.body.removeChild(iframe);
+                    this.innerHTML = originalContent;
+
+                    let elapsedTime = ((Date.now() - startTime) / 1000).toFixed(2);
+
+                    Toastify({
+                        text: `Download completed in ${elapsedTime} sec!`,
+                        duration: 3000,
+                        close: true,
+                        gravity: "top",
+                        position: "right",
+                        backgroundColor: "#28a745",
+                    }).showToast();
+                }, 3000);
+            });
+        });
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".show-eod-items").forEach(button => {
+            button.addEventListener("click", function () {
+                let eodId = this.dataset.id;
+                let modal = new bootstrap.Modal(document.getElementById("eodItemsModal"));
+
+                modal.show();
+
+                document.getElementById("modalLoader").style.display = "block";
+                document.getElementById("eodItemsContent").innerHTML = "";
+
+                fetch(`/finance/eod/detail/${eodId}/`)  
+                    .then(response => response.json())
+                    .then(data => {
+                        console.info(data)
+                        let content = "<ul class='list-group'>";
+                        if (data) {
+                            data.forEach(item => {
+                                content += `<li class="list-group-item d-flex justify-content-between">
+                                                <span>${item.sale__sale_type}</span>
+                                                <strong>${item.sale__amount}</strong>
+                                            </li>`;
+                            });
+                        } else {
+                            content = "<p class='text-muted text-center'>No items found.</p>";
+                        }
+                        content += "</ul>";
+
+                        document.getElementById("eodItemsContent").innerHTML = content;
+                    })
+                    .catch(error => {
+                        console.error("Error fetching EOD items:", error);
+                        document.getElementById("eodItemsContent").innerHTML = "<p class='text-danger text-center'>Error loading data.</p>";
+                    })
+                    .finally(() => {
+                        document.getElementById("modalLoader").style.display = "none";
+                    });
+            });
+        });
+    });
+
+</script>

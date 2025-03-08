@@ -1,4 +1,5 @@
 import os
+import dj_database_url
 from pathlib import Path
 from datetime import timedelta
 from django.contrib.messages import constants as messages
@@ -11,7 +12,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-ynmfo=w+y!--94m7^e3_v4q(1xe859gd*+g*yhc2j2)23_a8f9')
 
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
@@ -32,6 +33,7 @@ INSTALLED_APPS = [
 
     'crispy_forms',
     'crispy_bootstrap5',
+    'django_q',
 
     'users',
     'vouchers',
@@ -75,10 +77,9 @@ WSGI_APPLICATION = 'management.wsgi.application'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+     'default': dj_database_url.config(
+        default=os.environ.get('DATABASE_URL')
+    )
 }
 
 AUTH_USER_MODEL = 'users.User'
@@ -117,11 +118,11 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 
-MEDIA_URL = 'static/media/'
-STATIC_URL = 'static/'
+MEDIA_URL = '/media/'
+STATIC_URL = '/static/'
 
 STATICFILES_DIRS = [BASE_DIR / "static"]
-MEDIA_ROOT = os.path.join(BASE_DIR / 'staticfiles/media/')
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
@@ -168,3 +169,40 @@ SIMPLE_JWT = {
     # 'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
     # 'TOKEN_TYPE_CLAIM': 'token_type',
 }
+
+# settings.py
+Q_CLUSTER = {
+    'name': 'voucher_system',
+    'workers': 4,
+    'recycle': 500,
+    'timeout': 60,
+    'retry': 60,
+    'queue_limit': 500,
+    'bulk': 10,
+    'orm': 'default',
+}
+
+# redis and celery configurations
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [("127.0.0.1", 6379)],
+            "symmetric_encryption_keys": [SECRET_KEY],
+        },
+    },
+}
+
+CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
+CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379/0"
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "localhost"
+EMAIL_PORT = "1025"
+EMAIL_HOST_USER = ""
+EMAIL_HOST_PASSWORD = ""
+EMAIL_USE_TLS = False

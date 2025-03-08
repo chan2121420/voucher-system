@@ -6,8 +6,10 @@ from finance.models import Sale
 from django.db.models import Sum
 from datetime import timedelta
 from django.utils import timezone
+from loguru import logger
+import datetime
 
-today = timezone.now().date()
+today = datetime.datetime.today()
 
 @login_required(login_url='/users/login/')
 def dashboard(request): 
@@ -24,21 +26,16 @@ def dashboard(request):
         'count':vouchers.count(),
         
         #totals
-        'total_sales':Sale.objects.filter(date=today).aggregate(Sum('amount'))['amount__sum'] or 0.00
+        'todays_sales':Sale.objects.filter(date__date=today).aggregate(Sum('amount'))['amount__sum'] or 0.00,
+        'total_sales':total_sales
     })
 
 
 def sales(filter, start_day=None, end_day=None):
     
-    if filter == 'today':
-        total_sales = Sale.objects.filter(date=today).aggregate(Sum('amount'))['amount__sum']
-
-        return total_sales if total_sales else 0
-    
-    elif filter == 'week':
+    if filter == 'week':
         start_of_week = today - timedelta(days=today.weekday())  
         end_of_week = start_of_week + timedelta(days=6) 
-        total_sales = Sale.objects.filter(date__range=[start_of_week, end_of_week]).aggregate(Sum('amount'))['amount__sum']
 
         return total_sales if total_sales else 0
     
