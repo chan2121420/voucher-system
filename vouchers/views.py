@@ -2,14 +2,25 @@ from vouchers.models import VoucherFile, Vouchers, VoucherCategory, VoucherLogs,
 from django.db.models import Q
 from django.contrib import messages
 from .serializers import *
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required 
 from vouchers.forms import AddVoucherFileForm, VoucherUserForm
-import csv
-from django.shortcuts import render, redirect, get_object_or_404
-from loguru import logger
 from django.http import JsonResponse
 from django.template.loader import render_to_string
+from loguru import logger
+# from .pfsense_api import PfSenseAPI
+from django.utils import timezone
+
+
+def get_client_ip(request):
+    """Get client IP address from request"""
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
 
 @login_required(login_url='/users/login/')
 def voucherFiles(request):
@@ -18,19 +29,25 @@ def voucherFiles(request):
     if request.method == 'POST':
         form = AddVoucherFileForm(request.POST, request.FILES)
         if form.is_valid():
-            voucher_object = form.save(commit = False)
+            voucher_object = form.save(commit=False)
             voucher_object.user = request.user
-            voucher_log = VoucherLogs(
-                user = request.user,
-                action = f"{request.user} created {request.POST['name']}"
-            )
             voucher_object.save()
+            
+            voucher_log = VoucherLogs(
+                user=request.user,
+                action=f"{request.user.username} created file '{request.POST['name']}'",
+                action_type='create',
+                ip_address=get_client_ip(request)
+            )
             voucher_log.save()
+            messages.success(request, 'Voucher file created successfully')
+            return redirect('vouchers:voucherFiles')
 
     return render(request, 'vouchers/vouchers.html', {
         'voucherFiles': files,
         'form': form
     })
+
 
 @login_required(login_url='/users/login/')
 def vouchersList(request):
@@ -40,12 +57,17 @@ def vouchersList(request):
     vou = Vouchers.objects.all()
     categories = VoucherCategory.objects.all()
 
-    q =  request.GET.get('q') if request.GET.get('q') != None else ''
+    q = request.GET.get('q', '')
+    status_filter = request.GET.get('status', 'unused')
 
-    try:
-        filtered_vouchers = vou.filter(file__category = q) & vou.filter(status = 'unused')
-    except:
-        filtered_vouchers = vou.all() & vou.filter(status = 'unused')
+    # Filter by category and status
+    filtered_vouchers = vou.filter(status=status_filter)
+    
+    if q:
+        try:
+            filtered_vouchers = filtered_vouchers.filter(file__category__name=q)
+        except:
+            pass
 
     start = (page - 1) * page_size
     end = start + page_size
@@ -53,151 +75,254 @@ def vouchersList(request):
     total_vouchers = filtered_vouchers.count()
     has_more = total_vouchers > end
 
+    vouchers_page = filtered_vouchers[start:end]
+
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         html = render_to_string(
             'vouchers/partials/voucher_items.html',
-            {'vouchers': filtered_vouchers}
+            {'vouchers': vouchers_page}
         )
 
         return JsonResponse({
-            'html':html,
-            'has_more':has_more,
+            'html': html,
+            'has_more': has_more,
             'next_page': page + 1 if has_more else None
         })
 
-
     return render(request, 'vouchers/vouchers_list.html', {
-        'has_more':has_more,
+        'has_more': has_more,
         'next_page': page + 1 if has_more else None,
-        'vouchers': filtered_vouchers,
-        'categories':categories
+        'vouchers': vouchers_page,
+        'categories': categories,
+        'current_status': status_filter
     })
+
 
 @login_required(login_url='/users/login/')
 def addCategory(request):
-    if request.method  == 'POST':
-        print(request.POST['name'])
-        category_name = request.POST['name']
-        if VoucherCategory.objects.filter(name = category_name).exists():
-            messages.warning(request, 'category exists')
+    if request.method == 'POST':
+        category_name = request.POST.get('name', '').strip()
+        
+        if not category_name:
+            messages.warning(request, 'Category name is required')
             return redirect('vouchers:voucherFiles')
-        new_category = VoucherCategory(
-            name = category_name
-        )
+            
+        if VoucherCategory.objects.filter(name=category_name).exists():
+            messages.warning(request, 'Category already exists')
+            return redirect('vouchers:voucherFiles')
+            
+        new_category = VoucherCategory(name=category_name)
         new_category.save()
-    messages.success(request, 'category successfully added')
+        
+        voucher_log = VoucherLogs(
+            user=request.user,
+            action=f"{request.user.username} created category '{category_name}'",
+            action_type='create',
+            ip_address=get_client_ip(request)
+        )
+        voucher_log.save()
+        
+        messages.success(request, 'Category successfully added')
+    
     return redirect('vouchers:voucherFiles')
 
-@login_required(login_url='/users/login/')
+
+@login_required(login_url='/users/login/')    
 def populateVouchers(request, pk):
+    """Populate vouchers from file and optionally sync to pfSense"""
     files = VoucherFile.objects.all()
     
-    file = get_object_or_404(VoucherFile, pk=pk)
-
-    if file.status == 'populated':
-        messages.error(request, "File is already populated")
-        return redirect('vouchers:voucherList')
-
-    file_path = f'staticfiles/media/{file.file}'
-   
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            reader = csv.DictReader(f)  
+        file = VoucherFile.objects.get(pk=pk)
+    except VoucherFile.DoesNotExist:
+        messages.error(request, 'Voucher file not found')
+        return redirect('vouchers:voucherFiles')
 
-            row_count = 1
+    if file.status != 'not populated':
+        messages.error(request, "File is already populated")
+        return redirect('vouchers:voucherFiles')
 
-            logger.info(f'Processing file: {file}')
-
-            vouchers_to_create = []  
-            for row in reader:
-                logger.info(f'processing row {row_count}')
-                voucher = Vouchers(
-                    user=request.user,
-                    voucher_username=row["username"],  
-                    voucher_password=row["password"],  
-                    file=file,
-                    status='unused'
-                )
-                vouchers_to_create.append(voucher)
-                row_count += 1
-            
-            Vouchers.objects.bulk_create(vouchers_to_create)
-
-            VoucherLogs.objects.create(
-                user=request.user,
-                action=f"{request.user} populated {file.name}"
-            )
-            file.status = 'populated'
-            file.save()
-
-            messages.success(request, "Vouchers Successfully Populated.")
-            return redirect('vouchers:voucherList')
-
+    try:
+        voucher_count = 0
+        with open(file.file.path, "r") as f:
+            for line in f:
+                voucher_code = line.strip()
+                if voucher_code:  # Skip empty lines
+                    voucher = Vouchers(
+                        user=request.user,
+                        voucher_no=voucher_code,
+                        file=file,
+                        validity_duration=24,  # Default 24 hours
+                    )
+                    voucher.save()
+                    voucher_count += 1
+        
+        file.status = 'populated'
+        file.save()
+        
+        voucher_log = VoucherLogs(
+            user=request.user,
+            action=f"{request.user.username} populated {voucher_count} vouchers from '{file.name}'",
+            action_type='populate',
+            ip_address=get_client_ip(request)
+        )
+        voucher_log.save()
+        
+        messages.success(request, f"Successfully populated {voucher_count} vouchers")
+        
+        # Optionally sync to pfSense
+        if request.POST.get('sync_to_pfsense') == 'yes':
+            return redirect('vouchers:syncToPfsense', pk=pk)
+        
+        return redirect('vouchers:vouchersList')
+        
     except Exception as e:
-        messages.error(request, f"Error processing file: {str(e)}")
+        logger.error(f"Error populating vouchers: {str(e)}")
+        messages.error(request, f"Error populating vouchers: {str(e)}")
+        return redirect('vouchers:voucherFiles')
 
-    return render(request, 'vouchers/vouchers.html', {'voucherFiles': files})
 
+@login_required(login_url='/users/login/')
+def syncToPfsense(request, pk=None):
+    # """Sync vouchers to pfSense captive portal"""
+    # try:
+    #     pfsense = PfSenseAPI()
+        
+    #     if pk:
+    #         # Sync specific file
+    #         file = get_object_or_404(VoucherFile, pk=pk)
+    #         vouchers = Vouchers.objects.filter(file=file, synced_to_pfsense=False)
+    #     else:
+    #         # Sync all unsynced vouchers
+    #         vouchers = Vouchers.objects.filter(synced_to_pfsense=False)
+        
+    #     synced_count = 0
+    #     for voucher in vouchers:
+    #         result = pfsense.create_voucher(
+    #             voucher_code=voucher.voucher_no,
+    #             validity_hours=voucher.validity_duration,
+    #             bandwidth_up=voucher.bandwidth_up,
+    #             bandwidth_down=voucher.bandwidth_down
+    #         )
+            
+    #         if result.get('success'):
+    #             voucher.synced_to_pfsense = True
+    #             voucher.pfsense_roll_id = result.get('roll_id')
+    #             voucher.save()
+    #             synced_count += 1
+        
+    #     voucher_log = VoucherLogs(
+    #         user=request.user,
+    #         action=f"{request.user.username} synced {synced_count} vouchers to pfSense",
+    #         action_type='sync',
+    #         ip_address=get_client_ip(request)
+    #     )
+    #     voucher_log.save()
+        
+    #     messages.success(request, f"Successfully synced {synced_count} vouchers to pfSense")
+        
+    # except Exception as e:
+    #     logger.error(f"Error syncing to pfSense: {str(e)}")
+    #     messages.error(request, f"Error syncing to pfSense: {str(e)}")
+    
+    # return redirect('vouchers:vouchersList')
+    pass
 
 @login_required(login_url='/users/login/')
 def addVoucherUser(request, pk):
+    """Associate user information with a voucher"""
     voucher_users = VoucherUser.objects.all()
+    
     try:
-        voucher = Vouchers.objects.get(id = pk)
-    except:
-        return render(request, '404.html')
-    form =  VoucherUserForm()
+        voucher = Vouchers.objects.get(id=pk)
+    except Vouchers.DoesNotExist:
+        messages.error(request, 'Voucher not found')
+        return redirect('vouchers:vouchersList')
+    
+    # Check if voucher already has a user
+    if hasattr(voucher, 'voucher_user'):
+        messages.warning(request, 'This voucher already has a user assigned')
+        return redirect('vouchers:printVoucher', pk=pk)
+    
+    form = VoucherUserForm()
+    
     if request.method == 'POST':
-        form =  VoucherUserForm(request.POST)
+        form = VoucherUserForm(request.POST)
         if form.is_valid():
-            vu_object = form.save(commit = False)
-            vu_object.voucher_no = voucher.voucher_no,
+            vu_object = form.save(commit=False)
+            vu_object.voucher = voucher
+            vu_object.voucher_no = voucher.voucher_no
             vu_object.save()
+            
+            voucher_log = VoucherLogs(
+                user=request.user,
+                action=f"{request.user.username} assigned voucher {voucher.voucher_no} to {vu_object.name}",
+                action_type='create',
+                voucher=voucher,
+                ip_address=get_client_ip(request)
+            )
+            voucher_log.save()
+            
+            messages.success(request, 'User information saved successfully')
             return redirect('vouchers:printVoucher', voucher.id)
+    
     return render(request, 'vouchers/addVoucherUser.html', {
-        'form':form,
-        'voucher_users':voucher_users
+        'form': form,
+        'voucher': voucher,
+        'voucher_users': voucher_users
     })
+
 
 @login_required(login_url='/users/login/') 
 def printVoucher(request, pk):
+    """Print/display voucher details"""
     try:
         voucher = Vouchers.objects.get(pk=pk) 
-    except:
-        return render(request, '404.html')
+    except Vouchers.DoesNotExist:
+        messages.error(request, 'Voucher not found')
+        return redirect('vouchers:vouchersList')
     
     if request.method == 'POST':
-        if request.POST['status'] != '':
-            voucher.status = request.POST['status']
-            voucher_log = VoucherLogs(
-                user = request.user,
-                action = f"{request.user} printed voucher {voucher.voucher_no} ({voucher.file.category.name})"
-            )
+        status = request.POST.get('status', '')
+        if status in ['printed', 'used']:
+            voucher.status = status
+            
+            if status == 'printed' and not voucher.date_printed:
+                voucher.date_printed = timezone.now()
+            
             voucher.save()
+            
+            voucher_log = VoucherLogs(
+                user=request.user,
+                action=f"{request.user.username} marked voucher {voucher.voucher_no} as {status} ({voucher.file.category.name})",
+                action_type='print' if status == 'printed' else 'use',
+                voucher=voucher,
+                ip_address=get_client_ip(request)
+            )
             voucher_log.save()
-            return redirect('vouchers:voucherList')
-    return render(request, 'vouchers/printVoucher.html', {'voucher':voucher})
+            
+            messages.success(request, f'Voucher marked as {status}')
+            return redirect('vouchers:vouchersList')
+    
+    return render(request, 'vouchers/printVoucher.html', {'voucher': voucher})
+
 
 @login_required(login_url='/users/login/')
 def voucherLog(request):
+    """Display voucher activity logs with filtering and pagination"""
     page = int(request.GET.get('page', 1))
     page_size = 20  
-    q = request.GET.get('q') if request.GET.get('q') != None else ''
+    q = request.GET.get('q', '')
     
-    logs = VoucherLogs.objects.all().order_by('-date_created')  
+    logs = VoucherLogs.objects.all().select_related('user', 'voucher')
 
     # Apply filters
-    if q == 'create':
-        logs = logs.filter(Q(action__icontains=q))
-    elif q == 'print':
-        logs = logs.filter(Q(action__icontains=q))
-    elif q == 'populate':
-        logs = logs.filter(Q(action__icontains=q))
+    if q in ['create', 'print', 'populate', 'use', 'sync', 'expire']:
+        logs = logs.filter(action_type=q)
     elif q: 
         logs = logs.filter(
             Q(user__username__icontains=q) |
-            Q(action__icontains=q) |
-            Q(date_created__icontains=q)
+            Q(action__icontains=q)
         )
     
     start = (page - 1) * page_size
@@ -226,3 +351,36 @@ def voucherLog(request):
         'next_page': page + 1 if has_more else None,
         'current_filter': q
     })
+
+@login_required(login_url='/users/login/')
+def checkVoucherStatus(request, voucher_no):
+    """Check voucher status - useful for Android app API"""
+    try:
+        voucher = Vouchers.objects.get(voucher_no=voucher_no)
+        
+        data = {
+            'success': True,
+            'voucher_no': voucher.voucher_no,
+            'status': voucher.status,
+            'active': voucher.active,
+            'validity_duration': voucher.validity_duration,
+            'expiry_time': voucher.expiry_time.isoformat() if voucher.expiry_time else None,
+            'category': voucher.file.category.name,
+            'date_created': voucher.date_created.isoformat(),
+            'date_used': voucher.date_used.isoformat() if voucher.date_used else None,
+        }
+        
+        if hasattr(voucher, 'voucher_user'):
+            data['user'] = {
+                'name': voucher.voucher_user.name,
+                'phone': voucher.voucher_user.phonenumber,
+                'email': voucher.voucher_user.email,
+            }
+        
+        return JsonResponse(data)
+        
+    except Vouchers.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'error': 'Voucher not found'
+        }, status=404) 
