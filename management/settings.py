@@ -14,7 +14,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-ynmfo=w+y!--94m7^e3_v4q(1x
 
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['*', '192.168.1.107']
 
 CSRF_TRUSTED_ORIGINS = []
 

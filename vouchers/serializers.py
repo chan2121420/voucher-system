@@ -32,9 +32,10 @@ class VouchersSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Vouchers
-        fields = ['id', 'voucher_username', 'voucher_password', 'file', 'file_name', 'file_category', 'user', 'user_detail', 
-                  'date_created', 'date_used', 'status']
-        read_only_fields = ['id', 'date_created', 'date_used']
+        fields = ['id', 'voucher_no', 'file', 'file_name', 'file_category', 'user', 'user_detail', 
+                  'date_created', 'date_used', 'date_printed', 'status', 'active', 'validity_duration',
+                  'expiry_time', 'bandwidth_up', 'bandwidth_down', 'synced_to_pfsense']
+        read_only_fields = ['id', 'date_created', 'date_used', 'date_printed']
 
 
 class VoucherLogsSerializer(serializers.ModelSerializer):
@@ -42,18 +43,18 @@ class VoucherLogsSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = VoucherLogs
-        fields = ['id', 'user', 'user_detail', 'action', 'date_created']
+        fields = ['id', 'user', 'user_detail', 'action', 'action_type', 'date_created', 'ip_address']
         read_only_fields = ['date_created']
 
 
 class VoucherUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = VoucherUser
-        fields = ['id', 'voucher_no', 'name', 'phonenumber', 'date_created']
+        fields = ['id', 'voucher', 'voucher_no', 'name', 'phonenumber', 'email', 'date_created', 
+                  'device_mac', 'last_used_ip']
         read_only_fields = ['date_created']
 
 
-# Nested serializers for detailed views
 class VoucherFileDetailSerializer(serializers.ModelSerializer):
     user_detail = UserSerializer(source='user', read_only=True)
     category_detail = VoucherCategorySerializer(source='category', read_only=True)
@@ -68,3 +69,17 @@ class VoucherFileDetailSerializer(serializers.ModelSerializer):
     def get_vouchers(self, obj):
         voucher_objs = Vouchers.objects.filter(file=obj)
         return VouchersSerializer(voucher_objs, many=True).data
+
+
+class VoucherDetailSerializer(serializers.ModelSerializer):
+    user_detail = UserSerializer(source='user', read_only=True)
+    file_detail = VoucherFileSerializer(source='file', read_only=True)
+    voucher_user_detail = VoucherUserSerializer(source='voucher_user', read_only=True)
+    
+    class Meta:
+        model = Vouchers
+        fields = ['id', 'voucher_no', 'file', 'file_detail', 'user', 'user_detail', 
+                  'date_created', 'date_used', 'date_printed', 'status', 'active', 
+                  'validity_duration', 'expiry_time', 'bandwidth_up', 'bandwidth_down',
+                  'pfsense_roll_id', 'synced_to_pfsense', 'voucher_user_detail']
+        read_only_fields = ['id', 'date_created', 'date_used', 'date_printed']

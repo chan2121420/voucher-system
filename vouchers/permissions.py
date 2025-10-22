@@ -6,7 +6,6 @@ class IsAdminOrReadOnly(permissions.BasePermission):
     """
     
     def has_permission(self, request, view):
-        # Allow GET, HEAD, OPTIONS requests for all authenticated users
         if request.method in permissions.SAFE_METHODS:
             return True
             
