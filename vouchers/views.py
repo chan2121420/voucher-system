@@ -58,13 +58,18 @@ def vouchersList(request):
     q = request.GET.get('q', '')
     status_filter = request.GET.get('status', 'unused')
 
+    # Start with status filter
     filtered_vouchers = vou.filter(status=status_filter)
     
+    # Apply category filter if provided
     if q:
         try:
-            filtered_vouchers = filtered_vouchers.filter(file__category__name=q)
-        except:
-            pass
+            # Filter by category ID instead of name
+            category_id = int(q)
+            filtered_vouchers = filtered_vouchers.filter(file__category__id=category_id)
+        except (ValueError, TypeError):
+            # If q is not a valid integer, try filtering by category name
+            filtered_vouchers = filtered_vouchers.filter(file__category__name__icontains=q)
 
     start = (page - 1) * page_size
     end = start + page_size
@@ -91,9 +96,9 @@ def vouchersList(request):
         'next_page': page + 1 if has_more else None,
         'vouchers': vouchers_page,
         'categories': categories,
-        'current_status': status_filter
+        'current_status': status_filter,
+        'current_category': q  # Pass current category filter to template
     })
-
 
 @login_required(login_url='/users/login/')
 def addCategory(request):

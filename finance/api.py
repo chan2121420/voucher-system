@@ -54,69 +54,99 @@ class SaleViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         """
-        Custom create method to handle multiple vouchers in a single sale and create a client.
+        Custom create method to handle multiple vouchers in a single sale and optionally create a client.
         Expected payload:
         {
             "voucher": [1, 2],
-            "amount": 100.00,  
+            "amount": 100.00,
             "sale-type": "hourly",
             "cashier": 1,
+            "client": {
+                "name": "John Doe",
+                "phonenumber": "0771234567",
+                "email": "john@example.com"
+            }
         }
         """
-        client_data = request.data.pop("client", {}) if isinstance(request.data.get("client"), dict) else {} #remove client data for serializer validation
-    
-        serializer = self.get_serializer(data=request.data)
+        client_data = request.data.pop("client", None)
+        client = None
 
-        if serializer.is_valid():
-            vouchers = request.data.get("voucher", [])
+        # Process client info only if provided
+        if isinstance(client_data, dict) and client_data:
+            raw_phone = client_data.get("phonenumber", "")
+            raw_name = client_data.get("name", "")
 
-            if type(vouchers) != list:
-                vouchers = [vouchers]
+            client_phone = str(raw_phone).strip() if raw_phone is not None else ""
+            client_name = str(raw_name).strip() if raw_name is not None else ""
 
-            vouchers = list(map(int, vouchers)) 
-
-            existing_vouchers = set(Vouchers.objects.filter(id__in=vouchers, status='unused').values_list("id", flat=True))
-            missing_vouchers = set(vouchers) - existing_vouchers
-
-            if missing_vouchers:
-                return Response(
-                    {"message": f"Vouchers {list(missing_vouchers)} do not exist or have been sold."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            with transaction.atomic():
-                # Create Client
+            # Only create/get a client if phone number exists
+            if client_phone:
                 client, created = Client.objects.get_or_create(
-                    phonenumber=client_data.get("phonenumber"),
+                    phonenumber=client_phone,
                     defaults={
-                        "name": client_data.get("name", ""),
+                        "name": client_name,
                         "email": client_data.get("email", ""),
                     }
                 )
 
-                # Bulk update vouchers as sold
+                # If client exists but info differs, update it
+                if not created:
+                    updated = False
+                    if client_name and client.name != client_name:
+                        client.name = client_name
+                        updated = True
+                    if client_data.get("email") and client.email != client_data["email"]:
+                        client.email = client_data["email"]
+                        updated = True
+                    if updated:
+                        client.save()
+
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        vouchers = request.data.get("voucher", [])
+        if not isinstance(vouchers, list):
+            vouchers = [vouchers]
+
+        vouchers = list(map(int, vouchers))
+        existing_vouchers = set(Vouchers.objects.filter(id__in=vouchers, status='unused').values_list("id", flat=True))
+        missing_vouchers = set(vouchers) - existing_vouchers
+
+        if missing_vouchers:
+            return Response(
+                {"message": f"Vouchers {list(missing_vouchers)} do not exist or have been sold."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            with transaction.atomic():
+                # Mark vouchers as sold
                 Vouchers.objects.filter(pk__in=vouchers).update(status="sold", active=True)
 
-                # Save sale and associate client
+                # Save sale with or without client
                 sale = serializer.save(client=client)
-            
-            logger.info(f"Sale {sale.id} created by {request.user} with Client {client.id}")
+
+            logger.info(f"Sale {sale.id} created by {request.user} with client {client.id if client else 'None'}")
 
             sales_data = SaleSerializer(sale).data
-            vouchers_data =list(Vouchers.objects.filter(id__in=vouchers).values(
-                'id',
-                'voucher_username',
-                'voucher_password'
+            vouchers_data = list(Vouchers.objects.filter(id__in=vouchers).values(
+                'id', 'voucher_no' ,'voucher_user'
             ))
 
             data = {
-                'sales_data':sales_data,
-                'vouchers_data':vouchers_data
+                'sales_data': sales_data,
+                'vouchers_data': vouchers_data
             }
 
             return Response(data, status=status.HTTP_201_CREATED)
 
-        return Response(serializer.errors, status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f"Error creating sale: {str(e)}")
+            return Response(
+                {"message": f"Error creating sale: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
 
 class MonthlyPaymentViewSet(viewsets.ModelViewSet):
@@ -131,17 +161,14 @@ class MonthlyPaymentViewSet(viewsets.ModelViewSet):
         """Filter payments by query parameters"""
         queryset = MonthlyPayment.objects.all()
         
-        # Filter by status
         status_filter = self.request.query_params.get('status', None)
         if status_filter:
             queryset = queryset.filter(status=status_filter)
         
-        # Filter by client
         client_id = self.request.query_params.get('client', None)
         if client_id:
             queryset = queryset.filter(client_id=client_id)
         
-        # Filter by month
         month = self.request.query_params.get('month', None)
         if month:
             queryset = queryset.filter(payment_month=month)
@@ -160,7 +187,6 @@ class MonthlyPaymentViewSet(viewsets.ModelViewSet):
             "status": "pending",
             "notes": "October 2025 membership"
         }
-        
         Or to process payment immediately:
         {
             "client": 1,
@@ -178,16 +204,13 @@ class MonthlyPaymentViewSet(viewsets.ModelViewSet):
         cashier_id = request.data.pop('cashier', request.user.id)
         
         serializer = self.get_serializer(data=request.data)
-        
         if serializer.is_valid():
             with transaction.atomic():
                 monthly_payment = serializer.save()
                 
-                # If process_payment is True, create a Sale and mark as paid
                 if process_payment:
                     client = monthly_payment.client
                     
-                    # Create the sale
                     sale = Sale.objects.create(
                         amount=monthly_payment.amount,
                         sale_type='monthly',
@@ -239,7 +262,6 @@ class MonthlyPaymentViewSet(viewsets.ModelViewSet):
         cashier_id = request.data.get('cashier', request.user.id)
         
         with transaction.atomic():
-            # Create the sale
             sale = Sale.objects.create(
                 amount=monthly_payment.amount,
                 sale_type='monthly',
@@ -252,7 +274,6 @@ class MonthlyPaymentViewSet(viewsets.ModelViewSet):
                 notes=monthly_payment.notes
             )
             
-            # Update monthly payment record
             monthly_payment.sale = sale
             monthly_payment.status = 'paid'
             monthly_payment.payment_date = datetime.now()
@@ -278,11 +299,9 @@ class MonthlyPaymentViewSet(viewsets.ModelViewSet):
         if month_str:
             payment_month = datetime.strptime(month_str, '%Y-%m-%d').date().replace(day=1)
         else:
-            # Default to next month
             today = datetime.now().date()
             payment_month = (today.replace(day=1) + relativedelta(months=1))
         
-        # Get all active permanent members
         permanent_members = Client.objects.filter(
             client_type='permanent',
             is_active=True
@@ -293,7 +312,6 @@ class MonthlyPaymentViewSet(viewsets.ModelViewSet):
         
         with transaction.atomic():
             for client in permanent_members:
-                # Check if payment already exists for this month
                 existing = MonthlyPayment.objects.filter(
                     client=client,
                     payment_month=payment_month
@@ -303,10 +321,8 @@ class MonthlyPaymentViewSet(viewsets.ModelViewSet):
                     skipped_count += 1
                     continue
                 
-                # Calculate due date (5th of the month by default)
                 due_date = payment_month.replace(day=5)
                 
-                # Create payment record
                 MonthlyPayment.objects.create(
                     client=client,
                     amount=client.monthly_fee or 0,
